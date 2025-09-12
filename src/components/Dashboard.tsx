@@ -2,13 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Sparkles, BookOpen, Zap } from "lucide-react";
+import { User } from '@supabase/supabase-js';
 
 interface DashboardProps {
-  userEmail: string;
+  user: User;
   onLogout: () => void;
 }
 
-export default function Dashboard({ userEmail, onLogout }: DashboardProps) {
+export default function Dashboard({ user, onLogout }: DashboardProps) {
   const inviteUrl = "https://lovable.dev/invite/1e206a95-c6de-4ed1-a8bc-ef322934dd0c";
 
   const copyToClipboard = (text: string) => {
@@ -29,7 +30,18 @@ export default function Dashboard({ userEmail, onLogout }: DashboardProps) {
             </Badge>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">{userEmail}</span>
+            <div className="flex items-center space-x-2">
+              {user.user_metadata?.avatar_url && (
+                <img 
+                  src={user.user_metadata.avatar_url} 
+                  alt="Profile" 
+                  className="w-6 h-6 rounded-full"
+                />
+              )}
+              <span className="text-sm text-muted-foreground">
+                {user.user_metadata?.full_name || user.email}
+              </span>
+            </div>
             <Button variant="outline" size="sm" onClick={onLogout}>
               登出
             </Button>
