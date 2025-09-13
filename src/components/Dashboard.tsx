@@ -4,9 +4,26 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { ExternalLink, Sparkles, BookOpen, Zap, Lock } from "lucide-react";
+import { ExternalLink, Sparkles, Lock, Settings } from "lucide-react";
 import { User } from '@supabase/supabase-js';
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import AdminPanel from "./AdminPanel";
+
+interface Category {
+  id: string;
+  name: string;
+  display_name: string;
+  passwords: string[];
+}
+
+interface Item {
+  id: string;
+  category_id: string;
+  title: string;
+  link: string;
+}
 
 interface DashboardProps {
   user: User;
@@ -15,70 +32,90 @@ interface DashboardProps {
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const inviteUrl = "https://lovable.dev/invite/1e206a95-c6de-4ed1-a8bc-ef322934dd0c";
+  const isAdmin = user.email === 'boyman131418@gmail.com';
   
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [items, setItems] = useState<{[key: string]: Item[]}>({});
   const [unlockedTabs, setUnlockedTabs] = useState<Set<string>>(new Set());
   const [passwords, setPasswords] = useState<{[key: string]: string}>({});
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      // Load categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .order('created_at');
+
+      if (categoriesError) throw categoriesError;
+
+      // Load items
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('items')
+        .select('*')
+        .order('created_at');
+
+      if (itemsError) throw itemsError;
+
+      setCategories(categoriesData || []);
+      
+      // Group items by category_id
+      const groupedItems: {[key: string]: Item[]} = {};
+      (itemsData || []).forEach(item => {
+        if (!groupedItems[item.category_id]) {
+          groupedItems[item.category_id] = [];
+        }
+        groupedItems[item.category_id].push(item);
+      });
+      
+      setItems(groupedItems);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast({
+        title: "錯誤",
+        description: "載入資料失敗",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+    toast({
+      title: "成功",
+      description: "已複製到剪貼板",
+    });
   };
 
-  const handlePasswordSubmit = (tabId: string, password: string) => {
-    const validPasswords: {[key: string]: string[]} = {
-      meta: ['meta', 'symptom'],
-      crypto: ['symptom'],
-      ai: ['symptom'],
-      tools: ['symptom']
-    };
-
-    if (validPasswords[tabId]?.includes(password)) {
-      setUnlockedTabs(prev => new Set([...prev, tabId]));
-      setPasswords(prev => ({...prev, [tabId]: ''}));
+  const handlePasswordSubmit = (categoryName: string, password: string) => {
+    const category = categories.find(cat => cat.name === categoryName);
+    
+    if (category && category.passwords.includes(password)) {
+      setUnlockedTabs(prev => new Set([...prev, categoryName]));
+      setPasswords(prev => ({...prev, [categoryName]: ''}));
+      toast({
+        title: "成功",
+        description: "解鎖成功！",
+      });
+    } else {
+      toast({
+        title: "錯誤",
+        description: "密碼錯誤",
+        variant: "destructive",
+      });
     }
   };
 
-  const tabsData = {
-    meta: {
-      title: 'Meta 學員專區',
-      data: [
-        { title: 'EXCEL TO EXCEL', link: 'https://drive.google.com/file/d/1Z-KrnrWDsd0NvfJZtORnIVO4azTeOtgi/view?usp=sharing' },
-        { title: '私人助理', link: 'https://drive.google.com/file/d/1AF9oCWzf1zlVLKaoBDvj3f4ygGWReb7w/view?usp=sharing' },
-        { title: '玄學案例', link: 'https://drive.google.com/file/d/1nAGrXEntfmAVA6pfcTkplR-MrNZwNrr9/view?usp=sharing' },
-        { title: '虛擬KOL', link: 'https://drive.google.com/file/d/1KO4CE-gt20IlnkWZKAmVVTZHyiBTOz2K/view?usp=drive_link' }
-      ]
-    },
-    crypto: {
-      title: '加密貨幣專區',
-      data: [
-        { title: 'BTC 持幣情況', link: 'https://chainexposed.com/HoldWavesRealized.html' },
-        { title: 'BTC彩虹通道', link: 'https://www.blockchaincenter.net/en/bitcoin-rainbow-chart/' },
-        { title: 'CBBI指數', link: 'https://colintalkscrypto.com/cbbi/index.html' },
-        { title: 'BTC 逃頂指數', link: 'https://www.coinglass.com/zh-TW/pro/i/MA' },
-        { title: 'BTC熱力圖', link: 'https://buybitcoinworldwide.com/stats/stock-to-flow/' },
-        { title: 'BTC預測圖', link: 'https://coindataflow.com/zh/%E9%A2%84%E6%B5%8B/bitcoin' }
-      ]
-    },
-    ai: {
-      title: '人工智能專區',
-      data: [
-        { title: 'ChatGPT', link: 'https://chatgpt.com' },
-        { title: 'Poe', link: 'https://poe.com' },
-        { title: '豆包', link: 'https://www.doubao.com/' },
-        { title: 'CHATGPT MQL5 分析', link: 'https://chatgpt.com/g/g-dPlAXfGfX-mql5fen-xi-xi-tong' }
-      ]
-    },
-    tools: {
-      title: '功能性網址專區',
-      data: [
-        { title: '翻譯軟件', link: 'https://chromewebstore.google.com/detail/%E6%B2%89%E6%B5%B8%E5%BC%8F%E7%BF%BB%E8%AD%AF-%E7%B6%B2%E9%A0%81%E7%BF%BB%E8%AD%AF%E6%93%B4%E5%85%85-pdf%E7%BF%BB%E8%AD%AF-%E5%85%8D%E8%B2%BB/bpoadfkcbjbfhfodiogcnhhhpibjhbnh?hl=zh-TW&utm_source=ext_sidebar' },
-        { title: '查 流量 註冊', link: 'https://chromewebstore.google.com/detail/ip-whois-flags-chrome-web/kmdfbacgombndnllogoijhnggalgmkon?hl=zh-TW&utm_source=ext_sidebar' },
-        { title: '查鏈協助', link: 'https://chromewebstore.google.com/detail/metasuites-builders-swiss/fkhgpeojcbhimodmppkbbliepkpcgcoo?hl=zh-TW&utm_source=ext_sidebar' },
-        { title: '錢包', link: 'https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn?utm_source=ext_app_menu' }
-      ]
-    }
-  };
 
-  const renderPasswordPrompt = (tabId: string) => (
+  const renderPasswordPrompt = (category: Category) => (
     <div className="flex flex-col items-center justify-center py-12 space-y-4">
       <Lock className="w-12 h-12 text-muted-foreground" />
       <p className="text-muted-foreground">請輸入密碼以存取此專區</p>
@@ -86,19 +123,19 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         <Input
           type="password"
           placeholder="輸入密碼"
-          value={passwords[tabId] || ''}
-          onChange={(e) => setPasswords(prev => ({...prev, [tabId]: e.target.value}))}
-          onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit(tabId, passwords[tabId] || '')}
+          value={passwords[category.name] || ''}
+          onChange={(e) => setPasswords(prev => ({...prev, [category.name]: e.target.value}))}
+          onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit(category.name, passwords[category.name] || '')}
           className="w-48"
         />
-        <Button onClick={() => handlePasswordSubmit(tabId, passwords[tabId] || '')}>
+        <Button onClick={() => handlePasswordSubmit(category.name, passwords[category.name] || '')}>
           解鎖
         </Button>
       </div>
     </div>
   );
 
-  const renderDataTable = (data: {title: string, link: string}[]) => (
+  const renderDataTable = (categoryItems: Item[]) => (
     <Table>
       <TableHeader>
         <TableRow>
@@ -107,8 +144,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {data.map((item, index) => (
-          <TableRow key={index}>
+        {categoryItems.map((item) => (
+          <TableRow key={item.id}>
             <TableCell className="font-medium">{item.title}</TableCell>
             <TableCell>
               <Button variant="outline" size="sm" asChild>
@@ -124,6 +161,17 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     </Table>
   );
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-bg flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">載入中...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-bg">
       {/* Header */}
@@ -138,6 +186,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             </Badge>
           </div>
           <div className="flex items-center space-x-4">
+            {isAdmin && (
+              <Badge variant="outline" className="bg-cat-orange/10 text-cat-orange border-cat-orange/30">
+                <Settings className="w-3 h-3 mr-1" />
+                管理模式
+              </Badge>
+            )}
             <div className="flex items-center space-x-2">
               {user.user_metadata?.avatar_url && (
                 <img 
@@ -218,30 +272,41 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
           {/* Resource Tabs */}
           <div className="space-y-6">
-            <Tabs defaultValue="meta" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="meta">Meta 學員專區</TabsTrigger>
-                <TabsTrigger value="crypto">加密貨幣專區</TabsTrigger>
-                <TabsTrigger value="ai">人工智能專區</TabsTrigger>
-                <TabsTrigger value="tools">功能性網址專區</TabsTrigger>
-              </TabsList>
+            {categories.length > 0 && (
+              <Tabs defaultValue={categories[0]?.name} className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  {categories.map((category) => (
+                    <TabsTrigger key={category.name} value={category.name}>
+                      {category.display_name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
 
-              {Object.entries(tabsData).map(([tabId, tabData]) => (
-                <TabsContent key={tabId} value={tabId}>
-                  <Card className="shadow-card">
-                    <CardHeader>
-                      <CardTitle className="text-xl">{tabData.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {unlockedTabs.has(tabId) 
-                        ? renderDataTable(tabData.data)
-                        : renderPasswordPrompt(tabId)
-                      }
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              ))}
-            </Tabs>
+                {categories.map((category) => (
+                  <TabsContent key={category.name} value={category.name}>
+                    <Card className="shadow-card">
+                      <CardHeader>
+                        <CardTitle className="text-xl">{category.display_name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {unlockedTabs.has(category.name) || isAdmin
+                          ? renderDataTable(items[category.id] || [])
+                          : renderPasswordPrompt(category)
+                        }
+                        {isAdmin && unlockedTabs.has(category.name) && (
+                          <AdminPanel
+                            categoryId={category.id}
+                            categoryName={category.display_name}
+                            items={items[category.id] || []}
+                            onItemsChange={loadData}
+                          />
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            )}
           </div>
 
           {/* Footer Message */}
