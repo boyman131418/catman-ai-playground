@@ -1,8 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Sparkles, BookOpen, Zap } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { ExternalLink, Sparkles, BookOpen, Zap, Lock } from "lucide-react";
 import { User } from '@supabase/supabase-js';
+import { useState } from "react";
 
 interface DashboardProps {
   user: User;
@@ -11,10 +15,114 @@ interface DashboardProps {
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const inviteUrl = "https://lovable.dev/invite/1e206a95-c6de-4ed1-a8bc-ef322934dd0c";
+  
+  const [unlockedTabs, setUnlockedTabs] = useState<Set<string>>(new Set());
+  const [passwords, setPasswords] = useState<{[key: string]: string}>({});
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
+
+  const handlePasswordSubmit = (tabId: string, password: string) => {
+    const validPasswords: {[key: string]: string[]} = {
+      meta: ['meta', 'symptom'],
+      crypto: ['symptom'],
+      ai: ['symptom'],
+      tools: ['symptom']
+    };
+
+    if (validPasswords[tabId]?.includes(password)) {
+      setUnlockedTabs(prev => new Set([...prev, tabId]));
+      setPasswords(prev => ({...prev, [tabId]: ''}));
+    }
+  };
+
+  const tabsData = {
+    meta: {
+      title: 'Meta 學員專區',
+      data: [
+        { title: 'EXCEL TO EXCEL', link: 'https://drive.google.com/file/d/1Z-KrnrWDsd0NvfJZtORnIVO4azTeOtgi/view?usp=sharing' },
+        { title: '私人助理', link: 'https://drive.google.com/file/d/1AF9oCWzf1zlVLKaoBDvj3f4ygGWReb7w/view?usp=sharing' },
+        { title: '玄學案例', link: 'https://drive.google.com/file/d/1nAGrXEntfmAVA6pfcTkplR-MrNZwNrr9/view?usp=sharing' },
+        { title: '虛擬KOL', link: 'https://drive.google.com/file/d/1KO4CE-gt20IlnkWZKAmVVTZHyiBTOz2K/view?usp=drive_link' }
+      ]
+    },
+    crypto: {
+      title: '加密貨幣專區',
+      data: [
+        { title: 'BTC 持幣情況', link: 'https://chainexposed.com/HoldWavesRealized.html' },
+        { title: 'BTC彩虹通道', link: 'https://www.blockchaincenter.net/en/bitcoin-rainbow-chart/' },
+        { title: 'CBBI指數', link: 'https://colintalkscrypto.com/cbbi/index.html' },
+        { title: 'BTC 逃頂指數', link: 'https://www.coinglass.com/zh-TW/pro/i/MA' },
+        { title: 'BTC熱力圖', link: 'https://buybitcoinworldwide.com/stats/stock-to-flow/' },
+        { title: 'BTC預測圖', link: 'https://coindataflow.com/zh/%E9%A2%84%E6%B5%8B/bitcoin' }
+      ]
+    },
+    ai: {
+      title: '人工智能專區',
+      data: [
+        { title: 'ChatGPT', link: 'https://chatgpt.com' },
+        { title: 'Poe', link: 'https://poe.com' },
+        { title: '豆包', link: 'https://www.doubao.com/' },
+        { title: 'CHATGPT MQL5 分析', link: 'https://chatgpt.com/g/g-dPlAXfGfX-mql5fen-xi-xi-tong' }
+      ]
+    },
+    tools: {
+      title: '功能性網址專區',
+      data: [
+        { title: '翻譯軟件', link: 'https://chromewebstore.google.com/detail/%E6%B2%89%E6%B5%B8%E5%BC%8F%E7%BF%BB%E8%AD%AF-%E7%B6%B2%E9%A0%81%E7%BF%BB%E8%AD%AF%E6%93%B4%E5%85%85-pdf%E7%BF%BB%E8%AD%AF-%E5%85%8D%E8%B2%BB/bpoadfkcbjbfhfodiogcnhhhpibjhbnh?hl=zh-TW&utm_source=ext_sidebar' },
+        { title: '查 流量 註冊', link: 'https://chromewebstore.google.com/detail/ip-whois-flags-chrome-web/kmdfbacgombndnllogoijhnggalgmkon?hl=zh-TW&utm_source=ext_sidebar' },
+        { title: '查鏈協助', link: 'https://chromewebstore.google.com/detail/metasuites-builders-swiss/fkhgpeojcbhimodmppkbbliepkpcgcoo?hl=zh-TW&utm_source=ext_sidebar' },
+        { title: '錢包', link: 'https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn?utm_source=ext_app_menu' }
+      ]
+    }
+  };
+
+  const renderPasswordPrompt = (tabId: string) => (
+    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+      <Lock className="w-12 h-12 text-muted-foreground" />
+      <p className="text-muted-foreground">請輸入密碼以存取此專區</p>
+      <div className="flex space-x-2">
+        <Input
+          type="password"
+          placeholder="輸入密碼"
+          value={passwords[tabId] || ''}
+          onChange={(e) => setPasswords(prev => ({...prev, [tabId]: e.target.value}))}
+          onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit(tabId, passwords[tabId] || '')}
+          className="w-48"
+        />
+        <Button onClick={() => handlePasswordSubmit(tabId, passwords[tabId] || '')}>
+          解鎖
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderDataTable = (data: {title: string, link: string}[]) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>標題</TableHead>
+          <TableHead>連結</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.map((item, index) => (
+          <TableRow key={index}>
+            <TableCell className="font-medium">{item.title}</TableCell>
+            <TableCell>
+              <Button variant="outline" size="sm" asChild>
+                <a href={item.link} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  前往
+                </a>
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-bg">
@@ -108,45 +216,32 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             </CardContent>
           </Card>
 
-          {/* Learning Resources */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
-              <CardHeader>
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-lg bg-ai-blue/20">
-                    <BookOpen className="w-5 h-5 text-ai-blue" />
-                  </div>
-                  <CardTitle className="text-xl">AI 基礎教學</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  從零開始學習人工智慧的基本概念和應用方法
-                </p>
-                <Button variant="outline" className="w-full">
-                  開始學習
-                </Button>
-              </CardContent>
-            </Card>
+          {/* Resource Tabs */}
+          <div className="space-y-6">
+            <Tabs defaultValue="meta" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="meta">Meta 學員專區</TabsTrigger>
+                <TabsTrigger value="crypto">加密貨幣專區</TabsTrigger>
+                <TabsTrigger value="ai">人工智能專區</TabsTrigger>
+                <TabsTrigger value="tools">功能性網址專區</TabsTrigger>
+              </TabsList>
 
-            <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
-              <CardHeader>
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-lg bg-cat-orange/20">
-                    <Zap className="w-5 h-5 text-cat-orange" />
-                  </div>
-                  <CardTitle className="text-xl">實戰技巧</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  掌握AI工具的實用技巧，提升工作效率
-                </p>
-                <Button variant="outline" className="w-full">
-                  查看技巧
-                </Button>
-              </CardContent>
-            </Card>
+              {Object.entries(tabsData).map(([tabId, tabData]) => (
+                <TabsContent key={tabId} value={tabId}>
+                  <Card className="shadow-card">
+                    <CardHeader>
+                      <CardTitle className="text-xl">{tabData.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {unlockedTabs.has(tabId) 
+                        ? renderDataTable(tabData.data)
+                        : renderPasswordPrompt(tabId)
+                      }
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              ))}
+            </Tabs>
           </div>
 
           {/* Footer Message */}
