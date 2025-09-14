@@ -39,6 +39,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [unlockedTabs, setUnlockedTabs] = useState<Set<string>>(new Set());
   const [passwords, setPasswords] = useState<{[key: string]: string}>({});
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'admin' | 'member'>('admin');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -187,10 +188,20 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           </div>
           <div className="flex items-center space-x-4">
             {isAdmin && (
-              <Badge variant="outline" className="bg-cat-orange/10 text-cat-orange border-cat-orange/30">
-                <Settings className="w-3 h-3 mr-1" />
-                管理模式
-              </Badge>
+              <>
+                <Badge variant="outline" className="bg-cat-orange/10 text-cat-orange border-cat-orange/30">
+                  <Settings className="w-3 h-3 mr-1" />
+                  {viewMode === 'admin' ? '管理模式' : '會員模式'}
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewMode(viewMode === 'admin' ? 'member' : 'admin')}
+                  className="text-xs"
+                >
+                  切換到{viewMode === 'admin' ? '會員' : '管理'}模式
+                </Button>
+              </>
             )}
             <div className="flex items-center space-x-2">
               {user.user_metadata?.avatar_url && (
@@ -289,11 +300,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                         <CardTitle className="text-xl">{category.display_name}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        {unlockedTabs.has(category.name) || isAdmin
+                        {unlockedTabs.has(category.name) || (isAdmin && viewMode === 'admin')
                           ? renderDataTable(items[category.id] || [])
                           : renderPasswordPrompt(category)
                         }
-                        {isAdmin && (
+                        {isAdmin && viewMode === 'admin' && (
                           <AdminPanel
                             categoryId={category.id}
                             categoryName={category.display_name}
