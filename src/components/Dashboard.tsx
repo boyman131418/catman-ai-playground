@@ -23,6 +23,8 @@ interface Item {
   category_id: string;
   title: string;
   link: string;
+  description: string;
+  order_index: number;
 }
 
 interface DashboardProps {
@@ -60,7 +62,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       const { data: itemsData, error: itemsError } = await supabase
         .from('items')
         .select('*')
-        .order('created_at');
+        .order('order_index');
 
       if (itemsError) throw itemsError;
 
@@ -141,13 +143,17 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       <TableHeader>
         <TableRow>
           <TableHead>標題</TableHead>
+          <TableHead>備註</TableHead>
           <TableHead>連結</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {categoryItems.map((item) => (
+        {categoryItems.sort((a, b) => a.order_index - b.order_index).map((item) => (
           <TableRow key={item.id}>
             <TableCell className="font-medium">{item.title}</TableCell>
+            <TableCell className="text-sm text-muted-foreground max-w-xs">
+              {item.description || '-'}
+            </TableCell>
             <TableCell>
               <Button variant="outline" size="sm" asChild>
                 <a href={item.link} target="_blank" rel="noopener noreferrer">
