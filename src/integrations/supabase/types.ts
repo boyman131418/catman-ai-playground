@@ -20,7 +20,6 @@ export type Database = {
           display_name: string
           id: string
           name: string
-          passwords: string[]
           updated_at: string
         }
         Insert: {
@@ -28,7 +27,6 @@ export type Database = {
           display_name: string
           id?: string
           name: string
-          passwords?: string[]
           updated_at?: string
         }
         Update: {
@@ -36,10 +34,38 @@ export type Database = {
           display_name?: string
           id?: string
           name?: string
-          passwords?: string[]
           updated_at?: string
         }
         Relationships: []
+      }
+      category_passwords: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          password_hash: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          password_hash: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          password_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_passwords_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       items: {
         Row: {
@@ -87,7 +113,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      verify_category_password: {
+        Args: { category_name: string; password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

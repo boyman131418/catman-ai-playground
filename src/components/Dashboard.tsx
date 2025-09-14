@@ -15,7 +15,6 @@ interface Category {
   id: string;
   name: string;
   display_name: string;
-  passwords: string[];
 }
 
 interface Item {
@@ -98,20 +97,41 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     });
   };
 
-  const handlePasswordSubmit = (categoryName: string, password: string) => {
-    const category = categories.find(cat => cat.name === categoryName);
-    
-    if (category && category.passwords.includes(password)) {
-      setUnlockedTabs(prev => new Set([...prev, categoryName]));
-      setPasswords(prev => ({...prev, [categoryName]: ''}));
-      toast({
-        title: "成功",
-        description: "解鎖成功！",
+  const handlePasswordSubmit = async (categoryName: string, password: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-password', {
+        body: { categoryName, password }
       });
-    } else {
+
+      if (error) {
+        console.error('Error verifying password:', error);
+        toast({
+          title: "錯誤",
+          description: "驗證失敗，請稍後再試",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.valid) {
+        setUnlockedTabs(prev => new Set([...prev, categoryName]));
+        setPasswords(prev => ({...prev, [categoryName]: ''}));
+        toast({
+          title: "成功",
+          description: "解鎖成功！",
+        });
+      } else {
+        toast({
+          title: "錯誤",
+          description: "密碼錯誤",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error calling verify-password function:', error);
       toast({
         title: "錯誤",
-        description: "密碼錯誤",
+        description: "系統錯誤，請稍後再試",
         variant: "destructive",
       });
     }
