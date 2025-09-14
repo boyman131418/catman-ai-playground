@@ -293,7 +293,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                           ? renderDataTable(items[category.id] || [])
                           : renderPasswordPrompt(category)
                         }
-                        {isAdmin && unlockedTabs.has(category.name) && (
+                        {isAdmin && (
                           <AdminPanel
                             categoryId={category.id}
                             categoryName={category.display_name}
