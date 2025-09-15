@@ -67,6 +67,51 @@ export type Database = {
           },
         ]
       }
+      category_permissions: {
+        Row: {
+          can_delete: boolean | null
+          can_edit: boolean | null
+          can_view: boolean | null
+          category_id: string
+          created_at: string
+          id: string
+          membership_tier_id: string
+        }
+        Insert: {
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          category_id: string
+          created_at?: string
+          id?: string
+          membership_tier_id: string
+        }
+        Update: {
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          category_id?: string
+          created_at?: string
+          id?: string
+          membership_tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_permissions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_permissions_membership_tier_id_fkey"
+            columns: ["membership_tier_id"]
+            isOneToOne: false
+            referencedRelation: "membership_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           category_id: string
@@ -108,11 +153,93 @@ export type Database = {
           },
         ]
       }
+      membership_tiers: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          applied_at: string | null
+          approved_at: string | null
+          created_at: string
+          display_name: string | null
+          email: string
+          id: string
+          membership_tier_id: string | null
+          status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          approved_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          email: string
+          id?: string
+          membership_tier_id?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          approved_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          id?: string
+          membership_tier_id?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_membership_tier_id_fkey"
+            columns: ["membership_tier_id"]
+            isOneToOne: false
+            referencedRelation: "membership_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_user_permission: {
+        Args: {
+          category_name: string
+          permission_type: string
+          user_email: string
+        }
+        Returns: boolean
+      }
       verify_category_password: {
         Args: { category_name: string; password: string }
         Returns: boolean
