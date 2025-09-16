@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Edit } from "lucide-react";
+import { Plus, Trash2, Edit, ChevronUp, ChevronDown } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -37,6 +37,7 @@ interface Category {
   id: string;
   name: string;
   display_name: string;
+  order_index: number;
 }
 
 interface CategoryPermission {
@@ -100,7 +101,7 @@ const MembershipManagement = () => {
       const { data: categoriesData } = await supabase
         .from('categories')
         .select('*')
-        .order('name');
+        .order('order_index');
 
       // Load permissions
       const { data: permissionsData } = await supabase
@@ -315,11 +316,15 @@ const MembershipManagement = () => {
     }
 
     try {
+      // Get the highest order_index to assign the next one
+      const maxOrderIndex = Math.max(...categories.map(c => c.order_index), 0);
+      
       const { error } = await supabase
         .from('categories')
         .insert({
           name: newCategoryName.trim(),
           display_name: newCategoryDisplayName.trim(),
+          order_index: maxOrderIndex + 1,
         });
 
       if (error) throw error;
@@ -399,6 +404,67 @@ const MembershipManagement = () => {
       toast({
         title: "刪除失敗",
         description: "刪除分類時發生錯誤",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const moveCategoryUp = async (categoryId: string, currentIndex: number) => {
+    if (currentIndex <= 1) return; // Can't move up if already at top
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({ order_index: currentIndex - 1 })
+        .eq('id', categoryId);
+
+      if (error) throw error;
+
+      // Update the category that was at the target position
+      const categoryAtTarget = categories.find(c => c.order_index === currentIndex - 1);
+      if (categoryAtTarget) {
+        await supabase
+          .from('categories')
+          .update({ order_index: currentIndex })
+          .eq('id', categoryAtTarget.id);
+      }
+
+      loadData();
+    } catch (error) {
+      toast({
+        title: "排序失敗",
+        description: "調整分類順序時發生錯誤",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const moveCategoryDown = async (categoryId: string, currentIndex: number) => {
+    const maxIndex = Math.max(...categories.map(c => c.order_index));
+    if (currentIndex >= maxIndex) return; // Can't move down if already at bottom
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({ order_index: currentIndex + 1 })
+        .eq('id', categoryId);
+
+      if (error) throw error;
+
+      // Update the category that was at the target position
+      const categoryAtTarget = categories.find(c => c.order_index === currentIndex + 1);
+      if (categoryAtTarget) {
+        await supabase
+          .from('categories')
+          .update({ order_index: currentIndex })
+          .eq('id', categoryAtTarget.id);
+      }
+
+      loadData();
+    } catch (error) {
+      toast({
+        title: "排序失敗",
+        description: "調整分類順序時發生錯誤",
         variant: "destructive",
       });
     }
@@ -725,6 +791,26 @@ const MembershipManagement = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => moveCategoryUp(category.id, category.order_index)}
+                            disabled={category.order_index <= 1}
+                            className="p-1 h-6 w-6"
+                          >
+                            <ChevronUp className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => moveCategoryDown(category.id, category.order_index)}
+                            disabled={category.order_index >= Math.max(...categories.map(c => c.order_index))}
+                            className="p-1 h-6 w-6"
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </Button>
+                        </div>
                         <Button
                           size="sm"
                           variant="outline"

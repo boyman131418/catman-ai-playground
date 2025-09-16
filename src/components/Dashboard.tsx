@@ -19,6 +19,7 @@ interface Category {
   id: string;
   name: string;
   display_name: string;
+  order_index: number;
 }
 
 interface MembershipTier {
@@ -66,7 +67,7 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
-        .order('name');
+        .order('order_index');
 
       if (categoriesError) {
         console.error('Error loading categories:', categoriesError);
