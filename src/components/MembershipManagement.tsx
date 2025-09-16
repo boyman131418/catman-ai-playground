@@ -9,6 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Trash2, Edit } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -57,6 +60,19 @@ const MembershipManagement = () => {
   const [selectedTier, setSelectedTier] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  // Form states for adding new items
+  const [newTierName, setNewTierName] = useState("");
+  const [newTierDisplayName, setNewTierDisplayName] = useState("");
+  const [newTierDescription, setNewTierDescription] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryDisplayName, setNewCategoryDisplayName] = useState("");
+  const [editingTier, setEditingTier] = useState<MembershipTier | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [isTierDialogOpen, setIsTierDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isEditTierDialogOpen, setIsEditTierDialogOpen] = useState(false);
+  const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -185,6 +201,209 @@ const MembershipManagement = () => {
     return permissions.filter(p => p.membership_tier_id === tierId);
   };
 
+  const addMembershipTier = async () => {
+    if (!newTierName.trim() || !newTierDisplayName.trim()) {
+      toast({
+        title: "錯誤",
+        description: "請填寫等級名稱和顯示名稱",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('membership_tiers')
+        .insert({
+          name: newTierName.trim(),
+          display_name: newTierDisplayName.trim(),
+          description: newTierDescription.trim() || null,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "新增成功",
+        description: "會員等級已新增",
+      });
+
+      setNewTierName("");
+      setNewTierDisplayName("");
+      setNewTierDescription("");
+      setIsTierDialogOpen(false);
+      loadData();
+    } catch (error) {
+      toast({
+        title: "新增失敗",
+        description: "新增會員等級時發生錯誤",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const editMembershipTier = async () => {
+    if (!editingTier || !editingTier.name.trim() || !editingTier.display_name.trim()) {
+      toast({
+        title: "錯誤",
+        description: "請填寫等級名稱和顯示名稱",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('membership_tiers')
+        .update({
+          name: editingTier.name.trim(),
+          display_name: editingTier.display_name.trim(),
+          description: editingTier.description?.trim() || null,
+        })
+        .eq('id', editingTier.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "更新成功",
+        description: "會員等級已更新",
+      });
+
+      setEditingTier(null);
+      setIsEditTierDialogOpen(false);
+      loadData();
+    } catch (error) {
+      toast({
+        title: "更新失敗",
+        description: "更新會員等級時發生錯誤",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteMembershipTier = async (tierId: string) => {
+    try {
+      const { error } = await supabase
+        .from('membership_tiers')
+        .delete()
+        .eq('id', tierId);
+
+      if (error) throw error;
+
+      toast({
+        title: "刪除成功",
+        description: "會員等級已刪除",
+      });
+
+      loadData();
+    } catch (error) {
+      toast({
+        title: "刪除失敗",  
+        description: "刪除會員等級時發生錯誤",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addCategory = async () => {
+    if (!newCategoryName.trim() || !newCategoryDisplayName.trim()) {
+      toast({
+        title: "錯誤",
+        description: "請填寫分類名稱和顯示名稱",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .insert({
+          name: newCategoryName.trim(),
+          display_name: newCategoryDisplayName.trim(),
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "新增成功",
+        description: "分類已新增",
+      });
+
+      setNewCategoryName("");
+      setNewCategoryDisplayName("");
+      setIsCategoryDialogOpen(false);
+      loadData();
+    } catch (error) {
+      toast({
+        title: "新增失敗",
+        description: "新增分類時發生錯誤",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const editCategory = async () => {
+    if (!editingCategory || !editingCategory.name.trim() || !editingCategory.display_name.trim()) {
+      toast({
+        title: "錯誤",
+        description: "請填寫分類名稱和顯示名稱",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: editingCategory.name.trim(),
+          display_name: editingCategory.display_name.trim(),
+        })
+        .eq('id', editingCategory.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "更新成功",
+        description: "分類已更新",
+      });
+
+      setEditingCategory(null);
+      setIsEditCategoryDialogOpen(false);
+      loadData();
+    } catch (error) {
+      toast({
+        title: "更新失敗",
+        description: "更新分類時發生錯誤",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteCategory = async (categoryId: string) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', categoryId);
+
+      if (error) throw error;
+
+      toast({
+        title: "刪除成功",
+        description: "分類已刪除",
+      });
+
+      loadData();
+    } catch (error) {
+      toast({
+        title: "刪除失敗",
+        description: "刪除分類時發生錯誤",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -193,9 +412,11 @@ const MembershipManagement = () => {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="applications" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="applications">會員申請</TabsTrigger>
             <TabsTrigger value="permissions">權限管理</TabsTrigger>
+            <TabsTrigger value="tiers">會員等級</TabsTrigger>
+            <TabsTrigger value="categories">分類管理</TabsTrigger>
           </TabsList>
           
           <TabsContent value="applications" className="space-y-4">
@@ -351,7 +572,268 @@ const MembershipManagement = () => {
               </div>
             )}
           </TabsContent>
+          
+          <TabsContent value="tiers" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium">會員等級管理</h3>
+              <Dialog open={isTierDialogOpen} onOpenChange={setIsTierDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    新增等級
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>新增會員等級</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>等級名稱 (英文)</Label>
+                      <Input
+                        value={newTierName}
+                        onChange={(e) => setNewTierName(e.target.value)}
+                        placeholder="例如: premium"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>顯示名稱</Label>
+                      <Input
+                        value={newTierDisplayName}
+                        onChange={(e) => setNewTierDisplayName(e.target.value)}
+                        placeholder="例如: 高級會員"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>描述</Label>
+                      <Textarea
+                        value={newTierDescription}
+                        onChange={(e) => setNewTierDescription(e.target.value)}
+                        placeholder="等級描述"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setIsTierDialogOpen(false)}>
+                        取消
+                      </Button>
+                      <Button onClick={addMembershipTier}>
+                        新增
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            <div className="space-y-4">
+              {membershipTiers.map((tier) => (
+                <Card key={tier.id}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{tier.display_name}</span>
+                          <Badge variant="secondary">{tier.name}</Badge>
+                        </div>
+                        {tier.description && (
+                          <p className="text-sm text-muted-foreground">{tier.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingTier(tier);
+                            setIsEditTierDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        {tier.name !== 'admin' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteMembershipTier(tier.id)}
+                            className="text-red-500 hover:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="categories" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium">分類管理</h3>
+              <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    新增分類
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>新增分類</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>分類名稱 (英文)</Label>
+                      <Input
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="例如: ai-tools"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>顯示名稱</Label>
+                      <Input
+                        value={newCategoryDisplayName}
+                        onChange={(e) => setNewCategoryDisplayName(e.target.value)}
+                        placeholder="例如: AI工具專區"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
+                        取消
+                      </Button>
+                      <Button onClick={addCategory}>
+                        新增
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            <div className="space-y-4">
+              {categories.map((category) => (
+                <Card key={category.id}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{category.display_name}</span>
+                          <Badge variant="secondary">{category.name}</Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingCategory(category);
+                            setIsEditCategoryDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteCategory(category.id)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
         </Tabs>
+
+        {/* Edit Tier Dialog */}
+        <Dialog open={isEditTierDialogOpen} onOpenChange={setIsEditTierDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>編輯會員等級</DialogTitle>
+            </DialogHeader>
+            {editingTier && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>等級名稱 (英文)</Label>
+                  <Input
+                    value={editingTier.name}
+                    onChange={(e) => setEditingTier({...editingTier, name: e.target.value})}
+                    placeholder="例如: premium"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>顯示名稱</Label>
+                  <Input
+                    value={editingTier.display_name}
+                    onChange={(e) => setEditingTier({...editingTier, display_name: e.target.value})}
+                    placeholder="例如: 高級會員"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>描述</Label>
+                  <Textarea
+                    value={editingTier.description || ""}
+                    onChange={(e) => setEditingTier({...editingTier, description: e.target.value})}
+                    placeholder="等級描述"
+                    rows={3}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsEditTierDialogOpen(false)}>
+                    取消
+                  </Button>
+                  <Button onClick={editMembershipTier}>
+                    更新
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Category Dialog */}
+        <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>編輯分類</DialogTitle>
+            </DialogHeader>
+            {editingCategory && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>分類名稱 (英文)</Label>
+                  <Input
+                    value={editingCategory.name}
+                    onChange={(e) => setEditingCategory({...editingCategory, name: e.target.value})}
+                    placeholder="例如: ai-tools"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>顯示名稱</Label>
+                  <Input
+                    value={editingCategory.display_name}
+                    onChange={(e) => setEditingCategory({...editingCategory, display_name: e.target.value})}
+                    placeholder="例如: AI工具專區"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsEditCategoryDialogOpen(false)}>
+                    取消
+                  </Button>
+                  <Button onClick={editCategory}>
+                    更新
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

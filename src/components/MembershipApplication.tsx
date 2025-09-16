@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 interface MembershipTier {
   id: string;
@@ -19,19 +19,32 @@ interface MembershipApplicationProps {
 }
 
 const MembershipApplication = ({ membershipTiers }: MembershipApplicationProps) => {
-  const [email, setEmail] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [user, setUser] = useState<User | null>(null);
   const [selectedTier, setSelectedTier] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    // Get current user
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !selectedTier) {
+    if (!user?.email || !selectedTier) {
       toast({
         title: "錯誤",
-        description: "請填寫所有必要資料",
+        description: "請先登入並選擇會員等級",
         variant: "destructive",
       });
       return;
@@ -42,8 +55,8 @@ const MembershipApplication = ({ membershipTiers }: MembershipApplicationProps) 
     try {
       const { data, error } = await supabase.functions.invoke('apply-membership', {
         body: {
-          email,
-          displayName,
+          email: user.email,
+          displayName: user.email,
           membershipTierName: selectedTier
         }
       });
@@ -58,8 +71,6 @@ const MembershipApplication = ({ membershipTiers }: MembershipApplicationProps) 
       });
 
       // Reset form
-      setEmail("");
-      setDisplayName("");
       setSelectedTier("");
     } catch (error) {
       console.error('Application error:', error);
@@ -78,33 +89,22 @@ const MembershipApplication = ({ membershipTiers }: MembershipApplicationProps) 
       <CardHeader>
         <CardTitle>申請會員</CardTitle>
         <CardDescription>
-          填寫以下資料申請成為會員，管理員審核後即可使用相應權限
+          選擇會員等級申請成為會員，管理員審核後即可使用相應權限
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Google Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your-email@gmail.com"
-              required
-            />
+        {!user ? (
+          <div className="text-center text-muted-foreground">
+            請先登入才能申請會員
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="displayName">顯示名稱</Label>
-            <Input
-              id="displayName"
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="您的名稱"
-            />
-          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>登入帳戶</Label>
+              <div className="p-3 bg-muted rounded-md">
+                <span className="text-sm font-medium">{user.email}</span>
+              </div>
+            </div>
           
           <div className="space-y-2">
             <Label htmlFor="membershipTier">會員等級</Label>
@@ -124,14 +124,15 @@ const MembershipApplication = ({ membershipTiers }: MembershipApplicationProps) 
             </Select>
           </div>
           
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={loading}
-          >
-            {loading ? "提交中..." : "提交申請"}
-          </Button>
-        </form>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loading}
+            >
+              {loading ? "提交中..." : "提交申請"}
+            </Button>
+          </form>
+        )}
       </CardContent>
     </Card>
   );
