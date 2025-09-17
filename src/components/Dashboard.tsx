@@ -343,9 +343,19 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
           {/* Resource Tabs */}
           <div className="space-y-6">
             <Tabs defaultValue={categories[0]?.name} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className={`grid w-full gap-2 ${
+                categories.length <= 2 ? 'grid-cols-2' :
+                categories.length <= 3 ? 'grid-cols-3' :
+                categories.length <= 4 ? 'grid-cols-4' :
+                categories.length <= 6 ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6' :
+                'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
+              } p-1 h-auto min-h-[50px]`}>
                 {categories.map((category) => (
-                  <TabsTrigger key={category.name} value={category.name}>
+                  <TabsTrigger 
+                    key={category.name} 
+                    value={category.name}
+                    className="text-sm font-medium px-4 py-3 whitespace-nowrap text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all hover:bg-muted/50"
+                  >
                     {category.display_name}
                   </TabsTrigger>
                 ))}
