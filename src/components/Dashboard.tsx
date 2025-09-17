@@ -329,9 +329,9 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
                 {user.user_metadata?.full_name || user.email}
               </span>
             </div>
-            {userMembershipTier && (
+            {(userMembershipTier || isAdmin) && (
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                {userMembershipTier.display_name}
+                {userMembershipTier?.display_name || '管理員'}
               </Badge>
             )}
             <Button variant="outline" size="sm" onClick={onLogout}>
