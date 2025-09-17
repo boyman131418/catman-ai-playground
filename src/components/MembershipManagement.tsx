@@ -413,23 +413,26 @@ const MembershipManagement = () => {
     if (currentIndex <= 1) return; // Can't move up if already at top
 
     try {
-      const { error } = await supabase
+      // Find the category that's at the target position BEFORE making changes
+      const categoryAtTarget = categories.find(c => c.order_index === currentIndex - 1);
+      if (!categoryAtTarget) return;
+
+      // Swap the order indices
+      await supabase
         .from('categories')
         .update({ order_index: currentIndex - 1 })
         .eq('id', categoryId);
 
-      if (error) throw error;
-
-      // Update the category that was at the target position
-      const categoryAtTarget = categories.find(c => c.order_index === currentIndex - 1);
-      if (categoryAtTarget) {
-        await supabase
-          .from('categories')
-          .update({ order_index: currentIndex })
-          .eq('id', categoryAtTarget.id);
-      }
+      await supabase
+        .from('categories')
+        .update({ order_index: currentIndex })
+        .eq('id', categoryAtTarget.id);
 
       loadData();
+      toast({
+        title: "排序成功",
+        description: "分類順序已更新",
+      });
     } catch (error) {
       toast({
         title: "排序失敗",
@@ -444,23 +447,26 @@ const MembershipManagement = () => {
     if (currentIndex >= maxIndex) return; // Can't move down if already at bottom
 
     try {
-      const { error } = await supabase
+      // Find the category that's at the target position BEFORE making changes
+      const categoryAtTarget = categories.find(c => c.order_index === currentIndex + 1);
+      if (!categoryAtTarget) return;
+
+      // Swap the order indices
+      await supabase
         .from('categories')
         .update({ order_index: currentIndex + 1 })
         .eq('id', categoryId);
 
-      if (error) throw error;
-
-      // Update the category that was at the target position
-      const categoryAtTarget = categories.find(c => c.order_index === currentIndex + 1);
-      if (categoryAtTarget) {
-        await supabase
-          .from('categories')
-          .update({ order_index: currentIndex })
-          .eq('id', categoryAtTarget.id);
-      }
+      await supabase
+        .from('categories')
+        .update({ order_index: currentIndex })
+        .eq('id', categoryAtTarget.id);
 
       loadData();
+      toast({
+        title: "排序成功",
+        description: "分類順序已更新",
+      });
     } catch (error) {
       toast({
         title: "排序失敗",
