@@ -115,7 +115,8 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
       // Load user permissions and profile if user is logged in
       if (user?.email) {
         await loadUserPermissions(user.email, categoriesData || []);
-        await loadUserProfile(user.id, tiersData || []);
+        // Try to load profile by user_id first, then by email as fallback
+        await loadUserProfile(user.id, user.email, tiersData || []);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -155,16 +156,50 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
     setUserPermissions(permissions);
   };
 
-  const loadUserProfile = async (userId: string, membershipTiers: MembershipTier[]) => {
+  const loadUserProfile = async (userId: string, userEmail: string, membershipTiers: MembershipTier[]) => {
     try {
-      const { data: profileData, error } = await supabase
+      console.log('Loading profile for user ID:', userId, 'email:', userEmail);
+      
+      // First try to find by user_id
+      let { data: profileData, error } = await supabase
         .from('profiles')
         .select('*, membership_tier_id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error loading user profile:', error);
+      console.log('Profile by user_id:', profileData, 'Error:', error);
+
+      // If not found, try to find by email and update user_id
+      if (!profileData && !error) {
+        console.log('No profile found by user_id, trying by email...');
+        
+        const { data: profileByEmail, error: emailError } = await supabase
+          .from('profiles')
+          .select('*, membership_tier_id')
+          .eq('email', userEmail)
+          .eq('status', 'approved')
+          .maybeSingle();
+
+        console.log('Profile by email:', profileByEmail, 'Error:', emailError);
+
+        if (profileByEmail && !emailError) {
+          // Update the profile with user_id
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ user_id: userId })
+            .eq('id', profileByEmail.id);
+
+          if (!updateError) {
+            profileData = { ...profileByEmail, user_id: userId };
+            console.log('Updated profile with user_id');
+          } else {
+            console.error('Error updating profile with user_id:', updateError);
+          }
+        }
+      }
+
+      if (!profileData) {
+        console.log('No approved profile found for user');
         return;
       }
 
@@ -173,6 +208,7 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
       // Find the membership tier for this user
       if (profileData?.membership_tier_id) {
         const userTier = membershipTiers.find(tier => tier.id === profileData.membership_tier_id);
+        console.log('Found user tier:', userTier);
         setUserMembershipTier(userTier || null);
       }
     } catch (error) {
