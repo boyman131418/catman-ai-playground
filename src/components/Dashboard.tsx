@@ -343,12 +343,12 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
           {/* Resource Tabs */}
           <div className="space-y-6">
             <Tabs defaultValue={categories[0]?.name} className="w-full">
-              <TabsList className="flex flex-wrap justify-center gap-2 p-2 h-auto">
+              <TabsList className="grid grid-cols-4 gap-2 p-2 h-auto w-full">
                 {categories.map((category) => (
                   <TabsTrigger 
                     key={category.name} 
                     value={category.name}
-                    className="text-sm font-medium px-4 py-3 whitespace-nowrap text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all hover:bg-muted/50 flex-shrink-0 min-w-[120px]"
+                    className="text-sm font-medium px-4 py-3 whitespace-nowrap text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all hover:bg-muted/50"
                   >
                     {category.display_name}
                   </TabsTrigger>
