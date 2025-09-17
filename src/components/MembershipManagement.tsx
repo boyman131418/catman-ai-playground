@@ -410,7 +410,8 @@ const MembershipManagement = () => {
   };
 
   const moveCategoryUp = async (categoryId: string, currentIndex: number) => {
-    if (currentIndex <= 1) return; // Can't move up if already at top
+    const minIndex = Math.min(...categories.map(c => c.order_index));
+    if (currentIndex <= minIndex) return; // Can't move up if already at top
 
     try {
       // Find the category that's at the target position BEFORE making changes
@@ -434,6 +435,7 @@ const MembershipManagement = () => {
         description: "分類順序已更新",
       });
     } catch (error) {
+      console.error('Move up error:', error);
       toast({
         title: "排序失敗",
         description: "調整分類順序時發生錯誤",
@@ -468,6 +470,7 @@ const MembershipManagement = () => {
         description: "分類順序已更新",
       });
     } catch (error) {
+      console.error('Move down error:', error);
       toast({
         title: "排序失敗",
         description: "調整分類順序時發生錯誤",
