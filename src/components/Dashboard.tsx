@@ -183,17 +183,22 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
         console.log('Profile by email:', profileByEmail, 'Error:', emailError);
 
         if (profileByEmail && !emailError) {
-          // Update the profile with user_id
-          const { error: updateError } = await supabase
+          // Update the profile with user_id using admin privileges
+          console.log('Updating profile with user_id...');
+          const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
             .update({ user_id: userId })
-            .eq('id', profileByEmail.id);
+            .eq('id', profileByEmail.id)
+            .select('*, membership_tier_id')
+            .single();
 
-          if (!updateError) {
-            profileData = { ...profileByEmail, user_id: userId };
-            console.log('Updated profile with user_id');
+          if (!updateError && updatedProfile) {
+            profileData = updatedProfile;
+            console.log('Successfully updated profile with user_id:', profileData);
           } else {
             console.error('Error updating profile with user_id:', updateError);
+            // Still use the email-found profile for display
+            profileData = profileByEmail;
           }
         }
       }
