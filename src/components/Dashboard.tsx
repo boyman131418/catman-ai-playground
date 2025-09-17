@@ -52,6 +52,8 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
   const [items, setItems] = useState<{ [categoryId: string]: Item[] }>({});
   const [membershipTiers, setMembershipTiers] = useState<MembershipTier[]>([]);
   const [userPermissions, setUserPermissions] = useState<{ [categoryName: string]: { view: boolean; edit: boolean; delete: boolean } }>({});
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userMembershipTier, setUserMembershipTier] = useState<MembershipTier | null>(null);
   const [loading, setLoading] = useState(true);
   const [adminMode, setAdminMode] = useState(false);
   const [showApplication, setShowApplication] = useState(false);
@@ -110,9 +112,10 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
       
       setItems(itemsByCategory);
 
-      // Load user permissions if user is logged in
+      // Load user permissions and profile if user is logged in
       if (user?.email) {
         await loadUserPermissions(user.email, categoriesData || []);
+        await loadUserProfile(user.id, tiersData || []);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -150,6 +153,31 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
     }
     
     setUserPermissions(permissions);
+  };
+
+  const loadUserProfile = async (userId: string, membershipTiers: MembershipTier[]) => {
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*, membership_tier_id')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading user profile:', error);
+        return;
+      }
+
+      setUserProfile(profileData);
+
+      // Find the membership tier for this user
+      if (profileData?.membership_tier_id) {
+        const userTier = membershipTiers.find(tier => tier.id === profileData.membership_tier_id);
+        setUserMembershipTier(userTier || null);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -265,6 +293,11 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
                 {user.user_metadata?.full_name || user.email}
               </span>
             </div>
+            {userMembershipTier && (
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                {userMembershipTier.display_name}
+              </Badge>
+            )}
             <Button variant="outline" size="sm" onClick={onLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               登出
