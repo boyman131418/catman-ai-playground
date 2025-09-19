@@ -162,13 +162,38 @@ const MembershipManagement = () => {
     value: boolean
   ) => {
     try {
-      const { error } = await supabase
+      // First check if the permission record exists
+      const { data: existingPermission } = await supabase
         .from('category_permissions')
-        .update({ [permissionType]: value })
+        .select('id')
         .eq('membership_tier_id', membershipTierId)
-        .eq('category_id', categoryId);
+        .eq('category_id', categoryId)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingPermission) {
+        // Update existing record
+        const { error } = await supabase
+          .from('category_permissions')
+          .update({ [permissionType]: value })
+          .eq('membership_tier_id', membershipTierId)
+          .eq('category_id', categoryId);
+
+        if (error) throw error;
+      } else {
+        // Create new record
+        const { error } = await supabase
+          .from('category_permissions')
+          .insert({
+            membership_tier_id: membershipTierId,
+            category_id: categoryId,
+            [permissionType]: value,
+            can_view: permissionType === 'can_view' ? value : false,
+            can_edit: permissionType === 'can_edit' ? value : false,
+            can_delete: permissionType === 'can_delete' ? value : false
+          });
+
+        if (error) throw error;
+      }
 
       toast({
         title: "權限更新成功",
