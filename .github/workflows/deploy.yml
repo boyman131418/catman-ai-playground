@@ -27,24 +27,27 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
 
     - name: Install dependencies
       run: |
         npm ci
-        echo "Dependencies installed successfully"
+        echo "✅ Dependencies installed"
 
     - name: Build application
       run: |
         npm run build
-        echo "Build completed"
+        echo "✅ Build completed"
+        echo "📂 Checking dist folder:"
         ls -la dist/
-        echo "Index.html content:"
-        head -20 dist/index.html
+        echo "📄 Built index.html content:"
+        cat dist/index.html | head -40
 
     - name: Copy 404.html for SPA routing
-      run: cp dist/index.html dist/404.html
+      run: |
+        cp dist/index.html dist/404.html
+        echo "✅ 404.html created for SPA routing"
 
     - name: Setup Pages
       uses: actions/configure-pages@v4
