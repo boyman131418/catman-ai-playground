@@ -12,3 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://boyman131418.github.io/catman-ai-playground/sitemap.xml

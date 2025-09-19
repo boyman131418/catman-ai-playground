@@ -1,22 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CatMan AI - 專教人善用AI</title>
     <meta name="description" content="CatMan AI 專屬網站 - 專教人善用AI和自動化，讓你輕鬆掌握人工智慧的力量">
     <meta name="author" content="CatMan" />
+    <link rel="canonical" href="https://boyman131418.github.io/catman-ai-playground/" />
 
+    <!-- Open Graph -->
     <meta property="og:title" content="CatMan AI - 專教人善用AI" />
     <meta property="og:description" content="專教人善用AI的貓咪老師，讓你輕鬆掌握人工智慧的力量" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://boyman131418.github.io/catman-ai-playground/" />
+    <meta property="og:image" content="https://boyman131418.github.io/catman-ai-playground/assets/hero-cat-ai.jpg" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="CatMan AI - 專教人善用AI" />
+    <meta name="twitter:description" content="專教人善用AI的貓咪老師，讓你輕鬆掌握人工智慧的力量" />
+    <meta name="twitter:image" content="https://boyman131418.github.io/catman-ai-playground/assets/hero-cat-ai.jpg" />
     
-    <!-- GitHub Pages SPA redirect -->
+    <!-- GitHub Pages SPA redirect script -->
     <script>
       (function(l) {
         if (l.search[1] === '/' ) {
@@ -29,10 +34,19 @@
         }
       }(window.location))
     </script>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="./src/main.tsx" as="script" crossorigin />
+    <link rel="preload" href="./src/index.css" as="style" />
   </head>
 
   <body>
     <div id="root"></div>
-    <script type="module" src="./src/main.tsx"></script>
+    <script type="module" crossorigin src="./src/main.tsx"></script>
+    
+    <!-- Fallback for browsers that don't support modules -->
+    <script nomodule>
+      alert('Your browser does not support ES modules. Please use a modern browser.');
+    </script>
   </body>
 </html>
