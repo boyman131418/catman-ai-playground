@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -30,8 +30,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Build
+      - name: Build application
         run: npm run build
+        
+      - name: List build output
+        run: |
+          echo "Build completed. Contents of dist:"
+          ls -la dist/
+          echo "Generated index.html:"
+          cat dist/index.html
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
