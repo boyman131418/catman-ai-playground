@@ -29,106 +29,10 @@
         }
       }(window.location))
     </script>
-    
-    <!-- Fallback for GitHub Pages -->
-    <style>
-      .fallback-container {
-        font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
-        color: white;
-        margin: 0;
-        padding: 0;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      
-      .fallback-content {
-        text-align: center;
-        max-width: 800px;
-        padding: 2rem;
-      }
-      
-      .fallback-title {
-        font-size: 4rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-      
-      .fallback-subtitle {
-        font-size: 1.5rem;
-        margin-bottom: 2rem;
-        opacity: 0.9;
-      }
-      
-      .fallback-cat {
-        width: 120px;
-        height: 120px;
-        background: linear-gradient(135deg, #ff6b6b, #feca57);
-        border-radius: 50%;
-        margin: 2rem auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 4rem;
-        animation: bounce 2s infinite;
-      }
-      
-      @keyframes bounce {
-        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-        40% { transform: translateY(-10px); }
-        60% { transform: translateY(-5px); }
-      }
-      
-      .fallback-status {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 1rem 2rem;
-        border-radius: 10px;
-        margin-top: 2rem;
-        backdrop-filter: blur(10px);
-      }
-      
-      .fallback-hidden { display: none; }
-    </style>
   </head>
 
   <body>
     <div id="root"></div>
-    
-    <!-- Fallback content for GitHub Pages -->
-    <div id="fallback" class="fallback-container">
-      <div class="fallback-content">
-        <h1 class="fallback-title">CatMan AI</h1>
-        <p class="fallback-subtitle">專教人善用AI</p>
-        
-        <div class="fallback-cat">🐱</div>
-        
-        <div class="fallback-status">
-          <h2>應用程式載入中...</h2>
-          <p>如果長時間未載入，請重新整理頁面</p>
-          <p style="margin-top: 1rem; opacity: 0.7;">CatMan AI - 專業 AI 學習平台</p>
-        </div>
-      </div>
-    </div>
-    
-    <script>
-      // Hide fallback when React app loads
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          const root = document.getElementById('root');
-          const fallback = document.getElementById('fallback');
-          if (root && root.children.length > 0) {
-            fallback.classList.add('fallback-hidden');
-          }
-        }, 1000);
-      });
-    </script>
-    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
