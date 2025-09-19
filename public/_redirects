@@ -1,7 +1,2 @@
-# SPA Fallback
-/*    /catman-ai-playground/index.html   200
-
-# Static assets with correct MIME types
-*.js    /catman-ai-playground/*.js   200   Content-Type: application/javascript
-*.css   /catman-ai-playground/*.css  200   Content-Type: text/css
-*.json  /catman-ai-playground/*.json 200   Content-Type: application/json
+# SPA Fallback for GitHub Pages
+/*    /index.html   200

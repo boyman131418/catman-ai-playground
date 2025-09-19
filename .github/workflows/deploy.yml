@@ -3,6 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,56 +15,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build
+        run: npm run build
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    
+    needs: build
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: |
-        npm ci
-        echo "✅ Dependencies installed"
-
-    - name: Build application
-      run: |
-        npm run build
-        echo "✅ Build completed successfully"
-        echo "📂 Contents of dist folder:"
-        ls -la dist/
-        echo ""
-        echo "📄 Generated index.html content:"
-        cat dist/index.html
-        echo ""
-        echo "📦 JavaScript assets found:"
-        find dist -name "*.js" -type f | head -10
-        echo ""
-        echo "📦 CSS assets found:"
-        find dist -name "*.css" -type f | head -10
-
-    - name: Copy 404.html for SPA routing
-      run: |
-        cp dist/index.html dist/404.html
-        echo "✅ 404.html created for SPA routing"
-
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: './dist'
-
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
