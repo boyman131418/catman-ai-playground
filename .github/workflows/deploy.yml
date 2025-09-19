@@ -42,7 +42,11 @@ jobs:
         echo "📂 Checking dist folder:"
         ls -la dist/
         echo "📄 Built index.html content:"
-        cat dist/index.html | head -40
+        cat dist/index.html
+        echo "📂 Checking for JS assets:"
+        find dist -name "*.js" -type f
+        echo "📂 All dist files:"
+        find dist -type f
 
     - name: Copy 404.html for SPA routing
       run: |
