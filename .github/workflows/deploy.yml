@@ -30,17 +30,17 @@ jobs:
         node-version: '18'
 
     - name: Install dependencies
-      run: npm install
+      run: npm ci
 
     - name: Build
       run: npm run build
 
-    - name: Fix paths for GitHub Pages
+    - name: List dist contents (debug)
       run: |
-        # Replace /assets/ with ./assets/ in index.html
-        sed -i 's|/assets/|./assets/|g' dist/index.html
-        # Add base href for proper routing
-        sed -i 's|<head>|<head><base href="/catman-ai-playground/">|' dist/index.html
+        echo "Contents of dist folder:"
+        ls -la dist/
+        echo "Contents of dist/index.html:"
+        cat dist/index.html
 
     - name: Setup Pages
       uses: actions/configure-pages@v3
