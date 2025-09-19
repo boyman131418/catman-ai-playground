@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CatMan AI - 專教人善用AI</title>
+    <meta name="description" content="CatMan AI 專屬網站 - 專教人善用AI和自動化，讓你輕鬆掌握人工智慧的力量">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        color: white;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .container {
+        text-align: center;
+        max-width: 800px;
+        padding: 2rem;
+      }
+      
+      .hero-title {
+        font-size: 4rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      .hero-subtitle {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+      }
+      
+      .cat-icon {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #ff6b6b, #feca57);
+        border-radius: 50%;
+        margin: 2rem auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        animation: bounce 2s infinite;
+      }
+      
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-10px);
+        }
+        60% {
+          transform: translateY(-5px);
+        }
+      }
+      
+      .status {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem 2rem;
+        border-radius: 10px;
+        margin-top: 2rem;
+        backdrop-filter: blur(10px);
+      }
+      
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+      
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="hero-title">CatMan AI</h1>
+      <p class="hero-subtitle">專教人善用AI</p>
+      
+      <div class="cat-icon pulse">🐱</div>
+      
+      <div class="status">
+        <h2>網站運行正常！</h2>
+        <p>GitHub Pages 部署成功</p>
+        <p style="margin-top: 1rem; opacity: 0.7;">準備開始您的 AI 學習之旅</p>
+      </div>
+    </div>
+  </body>
+</html>
