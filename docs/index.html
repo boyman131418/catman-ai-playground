@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CatMan AI - 專教人善用AI</title>
+    <meta name="description" content="CatMan AI 專屬網站 - 專教人善用AI和自動化，讓你輕鬆掌握人工智慧的力量">
+    <meta name="author" content="CatMan" />
+
+    <meta property="og:title" content="CatMan AI - 專教人善用AI" />
+    <meta property="og:description" content="專教人善用AI的貓咪老師，讓你輕鬆掌握人工智慧的力量" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@lovable_dev" />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e); 
+            color: white; 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .container { 
+            text-align: center; 
+            max-width: 900px; 
+            width: 100%;
+        }
+        
+        .header {
+            margin-bottom: 2rem;
+        }
+        
+        .title { 
+            font-size: clamp(2.5rem, 8vw, 4rem); 
+            font-weight: 700; 
+            margin-bottom: 1rem; 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            background-clip: text; 
+            line-height: 1.2;
+        }
+        
+        .subtitle { 
+            font-size: clamp(1.2rem, 4vw, 1.5rem); 
+            margin-bottom: 2rem; 
+            opacity: 0.9; 
+        }
+        
+        .cat { 
+            width: clamp(80px, 15vw, 120px); 
+            height: clamp(80px, 15vw, 120px); 
+            background: linear-gradient(135deg, #ff6b6b, #feca57); 
+            border-radius: 50%; 
+            margin: 1.5rem auto; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: clamp(2.5rem, 6vw, 4rem); 
+            animation: bounce 2s infinite; 
+        }
+        
+        @keyframes bounce { 
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 
+            40% { transform: translateY(-10px); } 
+            60% { transform: translateY(-5px); } 
+        }
+        
+        .main-card { 
+            background: rgba(255, 255, 255, 0.1); 
+            padding: 2rem; 
+            border-radius: 16px; 
+            margin: 2rem 0;
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .feature {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature h3 {
+            margin: 0 0 0.5rem 0;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+        
+        .feature p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+        
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            min-width: 200px;
+            justify-content: center;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn.secondary {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+        }
+        
+        .status-text {
+            margin-top: 1.5rem;
+            opacity: 0.7;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 768px) {
+            .buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">CatMan AI</h1>
+            <p class="subtitle">專教人善用AI</p>
+            <div class="cat">🐱</div>
+        </div>
+        
+        <div class="main-card">
+            <h2 style="font-size: 1.8rem; margin-bottom: 1rem; color: #667eea;">完整會員管理系統</h2>
+            <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">包含 Google 登入、權限管理、分類系統等完整功能</p>
+            
+            <div class="feature-grid">
+                <div class="feature">
+                    <div class="feature-icon">🔐</div>
+                    <h3>Google 登入</h3>
+                    <p>安全便捷的身份驗證系統，支援 OAuth 2.0</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">👥</div>
+                    <h3>會員管理</h3>
+                    <p>完整的用戶權限系統，支援多層級管理</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <h3>分類管理</h3>
+                    <p>AI Agent、加密貨幣、人工智慧等專業分區</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3>實時同步</h3>
+                    <p>資料即時更新與管理，無縫用戶體驗</p>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <a href="https://lovable.dev/projects/510d2349-e8ab-45d2-8520-3d233530f8ae" class="btn">
+                    🚀 使用完整系統
+                </a>
+                <a href="https://lovable.dev/invite/1e206a95-c6de-4ed1-a8bc-ef322934dd0c" class="btn secondary">
+                    🎯 Lovable 邀請連結
+                </a>
+            </div>
+            
+            <div class="status-text">
+                <p><strong>GitHub Pages 版本為靜態展示</strong></p>
+                <p>完整功能請使用 Lovable 平台，包含即時資料庫、認證系統等</p>
+            </div>
+        </div>
+    </div>
+  </body>
+</html>
