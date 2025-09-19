@@ -31,10 +31,17 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm ci
+      run: |
+        npm ci
+        echo "Dependencies installed successfully"
 
     - name: Build application
-      run: npm run build
+      run: |
+        npm run build
+        echo "Build completed"
+        ls -la dist/
+        echo "Index.html content:"
+        head -20 dist/index.html
 
     - name: Copy 404.html for SPA routing
       run: cp dist/index.html dist/404.html
