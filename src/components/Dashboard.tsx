@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import AdminPanel from "./AdminPanel";
 import MembershipApplication from "./MembershipApplication";
 import MembershipManagement from "./MembershipManagement";
+import AnnouncementBoard from "./AnnouncementBoard";
 
 interface Category {
   id: string;
@@ -359,6 +360,9 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
               會員權限系統已啟用，享受個人化的內容體驗
             </p>
           </div>
+
+          {/* Announcement Board */}
+          <AnnouncementBoard isAdmin={isAdmin} adminMode={adminMode} />
 
           {/* Special Access Card */}
           <Card className="shadow-elevated border-ai-purple/30 bg-gradient-to-br from-card/50 to-ai-purple/5 backdrop-blur">
