@@ -243,10 +243,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      link_user_profiles: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      link_user_profiles: { Args: never; Returns: undefined }
       verify_category_password: {
         Args: { category_name: string; password: string }
         Returns: boolean
