@@ -25,20 +25,29 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
           
       - name: Install dependencies
-        run: npm ci
+        run: npm install
         
       - name: Build application
         run: npm run build
+        env:
+          NODE_ENV: production
         
-      - name: List build output
+      - name: Verify build output
         run: |
-          echo "Build completed. Contents of dist:"
+          echo "=== Build completed ==="
+          echo "Contents of dist:"
           ls -la dist/
-          echo "Generated index.html:"
+          echo ""
+          echo "=== dist/index.html ==="
           cat dist/index.html
+          echo ""
+          echo "=== Checking for built JS files ==="
+          ls -la dist/assets/ || echo "No assets folder"
+        
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
