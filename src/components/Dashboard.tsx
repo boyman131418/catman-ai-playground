@@ -55,7 +55,8 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
   const [userPermissions, setUserPermissions] = useState<{ [categoryName: string]: { view: boolean; edit: boolean; delete: boolean } }>({});
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userMembershipTier, setUserMembershipTier] = useState<MembershipTier | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
   const [adminMode, setAdminMode] = useState(false);
   const [showApplication, setShowApplication] = useState(false);
 
@@ -64,92 +65,81 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
   }, []);
 
   const loadData = async () => {
-    setLoading(true);
+    setDataLoading(true);
     try {
-      // Load categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .order('order_index');
+      // Load categories, items, and tiers in PARALLEL
+      const [categoriesRes, itemsRes, tiersRes] = await Promise.all([
+        supabase.from('categories').select('*').order('order_index'),
+        supabase.from('items').select('*').order('order_index'),
+        supabase.from('membership_tiers').select('*').order('name'),
+      ]);
 
-      if (categoriesError) {
-        console.error('Error loading categories:', categoriesError);
+      if (categoriesRes.error || itemsRes.error || tiersRes.error) {
+        console.error('Error loading data:', categoriesRes.error, itemsRes.error, tiersRes.error);
         return;
       }
 
-      // Load items
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('items')
-        .select('*')
-        .order('order_index');
-
-      if (itemsError) {
-        console.error('Error loading items:', itemsError);
-        return;
-      }
-
-      // Load membership tiers
-      const { data: tiersData, error: tiersError } = await supabase
-        .from('membership_tiers')
-        .select('*')
-        .order('name');
-
-      if (tiersError) {
-        console.error('Error loading membership tiers:', tiersError);
-        return;
-      }
-
-      setCategories(categoriesData || []);
-      setMembershipTiers(tiersData || []);
+      const cats = categoriesRes.data || [];
+      const tiers = tiersRes.data || [];
+      
+      setCategories(cats);
+      setMembershipTiers(tiers);
       
       // Group items by category
       const itemsByCategory: { [categoryId: string]: Item[] } = {};
-      (itemsData || []).forEach((item: Item) => {
+      (itemsRes.data || []).forEach((item: Item) => {
         if (!itemsByCategory[item.category_id]) {
           itemsByCategory[item.category_id] = [];
         }
         itemsByCategory[item.category_id].push(item);
       });
-      
       setItems(itemsByCategory);
+      setDataLoading(false);
 
-      // Load user permissions and profile if user is logged in
+      // Load permissions and profile in parallel (non-blocking)
       if (user?.email) {
-        await loadUserPermissions(user.email, categoriesData || []);
-        // Try to load profile by user_id first, then by email as fallback
-        await loadUserProfile(user.id, user.email, tiersData || []);
+        setPermissionsLoading(true);
+        Promise.all([
+          loadUserPermissions(user.email, cats),
+          loadUserProfile(user.id, user.email, tiers),
+        ]).finally(() => setPermissionsLoading(false));
+      } else {
+        setPermissionsLoading(false);
       }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   };
 
   const loadUserPermissions = async (userEmail: string, categories: Category[]) => {
     const permissions: { [categoryName: string]: { view: boolean; edit: boolean; delete: boolean } } = {};
     
-    for (const category of categories) {
-      try {
-        const { data: viewData } = await supabase.functions.invoke('check-user-permission', {
-          body: { userEmail, categoryName: category.name, permissionType: 'view' }
-        });
-        
-        const { data: editData } = await supabase.functions.invoke('check-user-permission', {
-          body: { userEmail, categoryName: category.name, permissionType: 'edit' }
-        });
-        
-        const { data: deleteData } = await supabase.functions.invoke('check-user-permission', {
-          body: { userEmail, categoryName: category.name, permissionType: 'delete' }
-        });
+    // Fire ALL permission checks in parallel instead of sequentially
+    const permissionPromises = categories.flatMap((category) => [
+      supabase.functions.invoke('check-user-permission', {
+        body: { userEmail, categoryName: category.name, permissionType: 'view' }
+      }).then(({ data }) => ({ category: category.name, type: 'view' as const, result: data?.hasPermission || false })),
+      supabase.functions.invoke('check-user-permission', {
+        body: { userEmail, categoryName: category.name, permissionType: 'edit' }
+      }).then(({ data }) => ({ category: category.name, type: 'edit' as const, result: data?.hasPermission || false })),
+      supabase.functions.invoke('check-user-permission', {
+        body: { userEmail, categoryName: category.name, permissionType: 'delete' }
+      }).then(({ data }) => ({ category: category.name, type: 'delete' as const, result: data?.hasPermission || false })),
+    ]);
 
-        permissions[category.name] = {
-          view: viewData?.hasPermission || false,
-          edit: editData?.hasPermission || false,
-          delete: deleteData?.hasPermission || false
-        };
-      } catch (error) {
-        console.error(`Error checking permissions for ${category.name}:`, error);
+    try {
+      const results = await Promise.all(permissionPromises);
+      for (const r of results) {
+        if (!permissions[r.category]) {
+          permissions[r.category] = { view: false, edit: false, delete: false };
+        }
+        permissions[r.category][r.type] = r.result;
+      }
+    } catch (error) {
+      console.error('Error checking permissions:', error);
+      for (const category of categories) {
         permissions[category.name] = { view: false, edit: false, delete: false };
       }
     }
@@ -283,7 +273,7 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
     </Table>
   );
 
-  if (loading) {
+  if (dataLoading) {
     return (
       <div className="min-h-screen bg-gradient-bg flex items-center justify-center">
         <div className="text-center space-y-4">
