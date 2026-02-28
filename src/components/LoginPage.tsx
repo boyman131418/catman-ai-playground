@@ -63,6 +63,8 @@ export default function LoginPage({}: LoginPageProps) {
             <img 
               src={heroImage} 
               alt="CatMan AI Teacher" 
+              loading="eager"
+              decoding="async"
               className="rounded-2xl shadow-elevated max-w-full h-auto"
             />
           </div>
