@@ -33,22 +33,12 @@ const Index = () => {
     await supabase.auth.signOut();
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-bg flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">載入中...</p>
-        </div>
-      </div>
-    );
+  // Show login page immediately while auth is loading (no blocking spinner)
+  if (!user || !session) {
+    return <LoginPage />;
   }
 
-  if (user && session) {
-    return <Dashboard user={user} onLogout={handleLogout} />;
-  }
-
-  return <LoginPage />;
+  return <Dashboard user={user} onLogout={handleLogout} />;
 };
 
 export default Index;
