@@ -16,17 +16,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = new URLSearchParams({
+    const params = new URLSearchParams({
       api_key: apiKey,
       spread_id: String(spread_id),
       topic_id: String(topic_id),
       lang,
     });
 
-    const resp = await fetch('https://api.yuanfenju.com/index.php/v1/Zhanbu/taluojiedu', {
-      method: 'POST',
+    const url = `https://api.yuanfenju.com/index.php/v1/Zhanbu/taluojiedu?${params.toString()}`;
+    const resp = await fetch(url, {
+      method: 'GET',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
     });
 
     const data = await resp.json();
