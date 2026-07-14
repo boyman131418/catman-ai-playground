@@ -172,9 +172,12 @@ const MembershipManagement = () => {
 
       if (existingPermission) {
         // Update existing record
+        const updatePayload: { can_view?: boolean; can_edit?: boolean; can_delete?: boolean } = {
+          [permissionType]: value,
+        };
         const { error } = await supabase
           .from('category_permissions')
-          .update({ [permissionType]: value })
+          .update(updatePayload)
           .eq('membership_tier_id', membershipTierId)
           .eq('category_id', categoryId);
 
@@ -186,10 +189,9 @@ const MembershipManagement = () => {
           .insert({
             membership_tier_id: membershipTierId,
             category_id: categoryId,
-            [permissionType]: value,
             can_view: permissionType === 'can_view' ? value : false,
             can_edit: permissionType === 'can_edit' ? value : false,
-            can_delete: permissionType === 'can_delete' ? value : false
+            can_delete: permissionType === 'can_delete' ? value : false,
           });
 
         if (error) throw error;

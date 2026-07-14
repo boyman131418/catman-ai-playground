@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-cat-ai.jpg";
+import { Sparkles } from "lucide-react";
 
 interface LoginPageProps {
   // No props needed as auth state is managed globally
@@ -96,6 +98,13 @@ export default function LoginPage({}: LoginPageProps) {
                   </svg>
                   {isLoading ? "登入中..." : "使用 Google 登入 🐱"}
                 </Button>
+              </div>
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <Link to="/tarot">
+                  <Button variant="outline" className="w-full gap-2">
+                    <Sparkles className="w-4 h-4" /> 免費體驗塔羅牌占卜
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
