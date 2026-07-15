@@ -299,6 +299,15 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
             </Badge>
           </div>
           <div className="flex items-center space-x-4">
+            <Button
+              asChild
+              size="sm"
+              className="bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 text-white shadow-glow"
+            >
+              <Link to="/tarot">
+                <Sparkles className="w-4 h-4 mr-1" /> 塔羅占卜
+              </Link>
+            </Button>
             {isAdmin && (
               <>
                 <Badge variant="outline" className="bg-cat-orange/10 text-cat-orange border-cat-orange/30">
