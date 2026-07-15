@@ -6,14 +6,16 @@ const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// query per region using /v2/everything (top-headlines?country= is empty on free tier)
-const REGIONS: { code: string; label: string; query: string; language: string }[] = [
-  { code: 'hk', label: '香港', query: '"Hong Kong"', language: 'en' },
-  { code: 'tw', label: '台灣', query: 'Taiwan', language: 'en' },
-  { code: 'cn', label: '中國大陸', query: 'China', language: 'en' },
-  { code: 'us', label: '美國', query: '"United States" OR USA', language: 'en' },
-  { code: 'gb', label: '英國', query: '"United Kingdom" OR Britain', language: 'en' },
-  { code: 'jp', label: '日本', query: 'Japan', language: 'en' },
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Query per region using /v2/everything first, with fallback keywords/endpoints.
+const REGIONS: { code: string; label: string; country?: string; queries: string[]; language?: string }[] = [
+  { code: 'hk', label: '香港', queries: ['"Hong Kong"', '香港'], language: 'en' },
+  { code: 'tw', label: '台灣', country: 'tw', queries: ['Taiwan', '台灣'], language: 'en' },
+  { code: 'cn', label: '中國大陸', country: 'cn', queries: ['China', '中國'], language: 'en' },
+  { code: 'us', label: '美國', country: 'us', queries: ['"United States" OR USA', 'America'], language: 'en' },
+  { code: 'gb', label: '英國', country: 'gb', queries: ['"United Kingdom" OR Britain', 'UK'], language: 'en' },
+  { code: 'jp', label: '日本', country: 'jp', queries: ['Japan', '日本'], language: 'en' },
 ];
 
 async function translateToChinese(texts: string[]): Promise<string[]> {
@@ -43,19 +45,75 @@ async function translateToChinese(texts: string[]): Promise<string[]> {
   }
 }
 
-async function fetchRegion(region: { code: string; label: string; query: string; language: string }) {
-  const from = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(region.query)}&language=${region.language}&from=${from}&sortBy=popularity&pageSize=10&apiKey=${NEWSAPI_KEY}`;
+function cleanArticles(articles: any[]) {
+  const seen = new Set<string>();
+  return articles
+    .filter((a: any) => a?.title && a?.url && !String(a.title).includes('[Removed]'))
+    .filter((a: any) => {
+      if (seen.has(a.url)) return false;
+      seen.add(a.url);
+      return true;
+    })
+    .sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+}
+
+async function fetchNewsApi(url: string, regionCode: string) {
   const resp = await fetch(url);
   if (!resp.ok) {
     const body = await resp.text();
-    console.error(`newsapi ${region.code} failed: ${resp.status} ${body}`);
-    return { region: region.code, region_label: region.label, articles: [] };
+    console.error(`newsapi ${regionCode} failed: ${resp.status} ${body}`);
+    return [];
   }
   const data = await resp.json();
-  const articles = (data.articles || [])
-    .filter((a: any) => a.publishedAt && new Date(a.publishedAt).getTime() >= Date.now() - 24 * 60 * 60 * 1000)
-    .slice(0, 3);
+  console.log(`newsapi ${regionCode} ${data.totalResults ?? 0} results`);
+  return cleanArticles(data.articles || []);
+}
+
+async function fetchRegion(region: { code: string; label: string; country?: string; queries: string[]; language?: string }) {
+  const fetched_at = new Date().toISOString();
+  const from = new Date(Date.now() - DAY_MS).toISOString();
+  let pool: any[] = [];
+
+  for (const query of region.queries) {
+    const params = new URLSearchParams({
+      q: query,
+      from,
+      sortBy: 'publishedAt',
+      pageSize: '20',
+      apiKey: NEWSAPI_KEY,
+    });
+    if (region.language) params.set('language', region.language);
+    pool = cleanArticles([...pool, ...await fetchNewsApi(`https://newsapi.org/v2/everything?${params}`, region.code)]);
+    if (pool.length >= 3) break;
+  }
+
+  // If Supabase/NewsAPI clocks disagree or the 24h search is sparse, retry without `from`.
+  if (pool.length < 3) {
+    for (const query of region.queries) {
+      const params = new URLSearchParams({
+        q: query,
+        sortBy: 'publishedAt',
+        pageSize: '20',
+        apiKey: NEWSAPI_KEY,
+      });
+      if (region.language) params.set('language', region.language);
+      pool = cleanArticles([...pool, ...await fetchNewsApi(`https://newsapi.org/v2/everything?${params}`, region.code)]);
+      if (pool.length >= 3) break;
+    }
+  }
+
+  // Last fallback: country headlines for supported regions.
+  if (pool.length < 3 && region.country) {
+    const params = new URLSearchParams({
+      country: region.country,
+      pageSize: '20',
+      apiKey: NEWSAPI_KEY,
+    });
+    pool = cleanArticles([...pool, ...await fetchNewsApi(`https://newsapi.org/v2/top-headlines?${params}`, region.code)]);
+  }
+
+  const exact24h = pool.filter((a: any) => a.publishedAt && new Date(a.publishedAt).getTime() >= Date.now() - DAY_MS);
+  const articles = (exact24h.length >= 3 ? exact24h : pool).slice(0, 3);
 
   // translate title+description
   const toTranslate: string[] = [];
@@ -72,7 +130,7 @@ async function fetchRegion(region: { code: string; label: string; query: string;
     publishedAt: a.publishedAt,
     urlToImage: a.urlToImage,
   }));
-  return { region: region.code, region_label: region.label, articles: out };
+  return { region: region.code, region_label: region.label, articles: out, fetched_at };
 }
 
 Deno.serve(async (req) => {

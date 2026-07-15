@@ -32,6 +32,8 @@ const News24Dialog = () => {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const hasArticles = (rows: RegionNews[]) => rows.some((r) => r.articles?.length > 0);
+
   const load = useCallback(async (force = false) => {
     if (force) setRefreshing(true); else setLoading(true);
     try {
@@ -41,7 +43,7 @@ const News24Dialog = () => {
           .from('news_cache')
           .select('*')
           .order('region');
-        if (data && data.length > 0) {
+        if (data && data.length > 0 && hasArticles(data as any)) {
           setRegions(data as any);
           setLastUpdated(data[0].fetched_at);
         }
@@ -55,7 +57,7 @@ const News24Dialog = () => {
       if (data?.regions) {
         // when cached=true response returns rows directly; when fresh returns {region, region_label, articles}
         setRegions(data.regions);
-        setLastUpdated(new Date().toISOString());
+        setLastUpdated(data.regions.find((r: RegionNews) => r.fetched_at)?.fetched_at || new Date().toISOString());
         if (force) toast({ title: '新聞已更新', description: `已重新載入 ${data.regions.length} 個地區` });
       }
     } catch (e: any) {
