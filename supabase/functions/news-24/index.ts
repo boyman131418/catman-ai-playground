@@ -116,8 +116,8 @@ async function fetchRegion(region: { code: string; label: string; country?: stri
     pool = cleanArticles([...pool, ...await fetchNewsApi(`https://newsapi.org/v2/top-headlines?${params}`, region.code)]);
   }
 
-  const exact24h = pool.filter((a: any) => a.publishedAt && new Date(a.publishedAt).getTime() >= Date.now() - DAY_MS);
-  const articles = (exact24h.length >= 3 ? exact24h : pool).slice(0, 3);
+    const exact24h = pool.filter((a: any) => a.publishedAt && new Date(a.publishedAt).getTime() >= Date.now() - DAY_MS);
+    const articles = (exact24h.length >= 10 ? exact24h : pool).slice(0, 10);
 
   // translate title+description
   const toTranslate: string[] = [];
