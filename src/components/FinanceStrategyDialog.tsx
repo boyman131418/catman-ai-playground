@@ -1,109 +1,186 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, RefreshCw, ExternalLink } from "lucide-react";
+import { TrendingUp, TrendingDown, RefreshCw, ExternalLink, Activity, Bitcoin, LineChart, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type Row = Record<string, any>;
+type Quote = {
+  symbol: string;
+  name?: string;
+  image?: string;
+  price?: number | null;
+  change?: number | null;
+  changePercent?: number | null;
+  volume?: number | null;
+  marketCap?: number | null;
+  dayHigh?: number | null;
+  dayLow?: number | null;
+  prevClose?: number | null;
+  high24h?: number | null;
+  low24h?: number | null;
+  currency?: string;
+  exchange?: string;
+  rank?: number;
+};
 
-interface FinancePayload {
+interface Payload {
   updatedAt: string;
-  locked: Record<string, boolean>;
-  congress: Row[];
-  senator: Row[];
-  house: Row[];
-  wsb: Row[];
-  contracts: Row[];
-  lobbying: Row[];
-  insiders: Row[];
-  offexchange: Row[];
+  indices: Quote[];
+  gainers: Quote[];
+  losers: Quote[];
+  actives: Quote[];
+  crypto: Quote[];
 }
 
-const CACHE_KEY = "finance-strategy-cache-v1";
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+const CACHE_KEY = "finance-strategy-cache-v2";
+const CACHE_TTL = 5 * 60 * 1000;
 
-const fmtDate = (v: any) => {
-  if (!v) return "-";
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString("zh-HK");
-};
-
-const fmtNum = (v: any) => {
+const fmtPrice = (v: any, digits = 2) => {
   const n = Number(v);
-  if (!isFinite(n) || n === 0) return v ? String(v) : "-";
-  if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
-  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
-  if (Math.abs(n) >= 1e3) return `$${(n / 1e3).toFixed(1)}K`;
-  return `$${n.toLocaleString()}`;
+  if (!isFinite(n)) return "-";
+  if (Math.abs(n) >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  if (Math.abs(n) < 1) return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
+  return n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 };
 
-const tickerLink = (t: string) =>
-  t ? `https://www.quiverquant.com/stock/${encodeURIComponent(t)}` : "#";
+const fmtCap = (v: any) => {
+  const n = Number(v);
+  if (!isFinite(n) || n === 0) return "-";
+  if (Math.abs(n) >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
+  if (Math.abs(n) >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (Math.abs(n) >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (Math.abs(n) >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return n.toLocaleString();
+};
 
-const LockedNotice = () => (
-  <div className="text-center py-10 space-y-2">
-    <p className="text-sm font-medium">此數據集需要升級 Quiver Quantitative 訂閱</p>
-    <p className="text-xs text-muted-foreground">你目前的 API Key 為免費層級，未包含此資料。</p>
-    <Button size="sm" variant="outline" asChild>
-      <a href="https://www.quiverquant.com/pricing/" target="_blank" rel="noreferrer">升級方案 <ExternalLink className="w-3 h-3 ml-1" /></a>
-    </Button>
-  </div>
-);
-
-const DataTable = ({ rows, cols, locked }: { rows: Row[]; cols: { key: string; label: string; render?: (v: any, r: Row) => any }[]; locked?: boolean }) => {
-  if (locked) return <LockedNotice />;
-  if (!rows || rows.length === 0) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">暫無資料</p>;
-  }
+const PctBadge = ({ value }: { value?: number | null }) => {
+  if (value == null || !isFinite(value)) return <span className="text-muted-foreground">-</span>;
+  const up = value >= 0;
   return (
-    <div className="rounded-md border overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {cols.map((c) => (
-              <TableHead key={c.key} className="whitespace-nowrap">{c.label}</TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((r, i) => (
-            <TableRow key={i}>
-              {cols.map((c) => (
-                <TableCell key={c.key} className="whitespace-nowrap text-sm">
-                  {c.render ? c.render(r[c.key], r) : (r[c.key] ?? "-")}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <span className={`inline-flex items-center gap-0.5 font-semibold tabular-nums ${up ? "text-emerald-500" : "text-rose-500"}`}>
+      {up ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+      {up ? "+" : ""}{value.toFixed(2)}%
+    </span>
+  );
+};
+
+const IndexCard = ({ q }: { q: Quote }) => {
+  const up = (q.changePercent ?? 0) >= 0;
+  return (
+    <Card className={`p-4 relative overflow-hidden border-2 transition-all hover:scale-[1.02] hover:shadow-lg ${up ? "border-emerald-500/20 hover:border-emerald-500/40" : "border-rose-500/20 hover:border-rose-500/40"}`}>
+      <div className={`absolute inset-0 opacity-5 ${up ? "bg-emerald-500" : "bg-rose-500"}`} />
+      <div className="relative">
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <p className="text-xs text-muted-foreground font-mono">{q.symbol}</p>
+            <h3 className="font-semibold text-sm">{q.name}</h3>
+          </div>
+          {up ? <TrendingUp className="w-4 h-4 text-emerald-500" /> : <TrendingDown className="w-4 h-4 text-rose-500" />}
+        </div>
+        <p className="text-2xl font-bold tabular-nums">{fmtPrice(q.price)}</p>
+        <div className="flex items-center gap-2 mt-1 text-sm">
+          <span className={`tabular-nums ${up ? "text-emerald-500" : "text-rose-500"}`}>
+            {up ? "+" : ""}{q.change != null ? fmtPrice(q.change) : "-"}
+          </span>
+          <PctBadge value={q.changePercent} />
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+const StockList = ({ items, kind }: { items: Quote[]; kind: "gain" | "loss" | "active" }) => {
+  if (!items?.length) return <p className="text-center text-muted-foreground py-12 text-sm">暫無資料</p>;
+  return (
+    <div className="grid gap-2">
+      {items.map((q, i) => {
+        const up = (q.changePercent ?? 0) >= 0;
+        return (
+          <a
+            key={q.symbol + i}
+            href={`https://finance.yahoo.com/quote/${encodeURIComponent(q.symbol)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="group flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-all"
+          >
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-xs font-bold text-primary">
+              {i + 1}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-bold text-sm">{q.symbol}</span>
+                <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-60 transition" />
+              </div>
+              <p className="text-xs text-muted-foreground truncate">{q.name}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-bold tabular-nums text-sm">${fmtPrice(q.price)}</p>
+              <PctBadge value={q.changePercent} />
+            </div>
+            {kind === "active" && (
+              <div className="text-right hidden sm:block min-w-[70px]">
+                <p className="text-[10px] text-muted-foreground">成交量</p>
+                <p className="text-xs font-semibold tabular-nums">{fmtCap(q.volume)}</p>
+              </div>
+            )}
+            {kind !== "active" && q.marketCap != null && (
+              <div className="text-right hidden sm:block min-w-[70px]">
+                <p className="text-[10px] text-muted-foreground">市值</p>
+                <p className="text-xs font-semibold tabular-nums">${fmtCap(q.marketCap)}</p>
+              </div>
+            )}
+          </a>
+        );
+      })}
     </div>
   );
 };
 
-const TickerCell = (v: any) =>
-  v ? (
-    <a href={tickerLink(v)} target="_blank" rel="noreferrer" className="font-mono font-semibold text-primary hover:underline inline-flex items-center gap-1">
-      {v} <ExternalLink className="w-3 h-3" />
-    </a>
-  ) : "-";
-
-const TxCell = (v: any) => {
-  const s = String(v || "").toLowerCase();
-  if (s.includes("purchase") || s.includes("buy")) return <Badge className="bg-green-500/20 text-green-600 border-green-500/30">買入</Badge>;
-  if (s.includes("sale") || s.includes("sell")) return <Badge className="bg-red-500/20 text-red-600 border-red-500/30">賣出</Badge>;
-  return v || "-";
+const CryptoList = ({ items }: { items: Quote[] }) => {
+  if (!items?.length) return <p className="text-center text-muted-foreground py-12 text-sm">暫無資料</p>;
+  return (
+    <div className="grid gap-2">
+      {items.map((c) => (
+        <a
+          key={c.symbol}
+          href={`https://www.coingecko.com/en/coins/${(c.name || c.symbol || "").toLowerCase().replace(/\s+/g, "-")}`}
+          target="_blank"
+          rel="noreferrer"
+          className="group flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-all"
+        >
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/5 flex items-center justify-center text-xs font-bold text-amber-600">
+            {c.rank}
+          </div>
+          {c.image ? (
+            <img src={c.image} alt={c.symbol} className="w-8 h-8 rounded-full" loading="lazy" />
+          ) : (
+            <Bitcoin className="w-8 h-8 text-amber-500" />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm">{c.name}</span>
+              <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-mono">{c.symbol}</Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground">市值 ${fmtCap(c.marketCap)} · 24h 量 ${fmtCap(c.volume)}</p>
+          </div>
+          <div className="text-right">
+            <p className="font-bold tabular-nums text-sm">${fmtPrice(c.price)}</p>
+            <PctBadge value={c.changePercent} />
+          </div>
+        </a>
+      ))}
+    </div>
+  );
 };
 
 const FinanceStrategyDialog = () => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<FinancePayload | null>(null);
+  const [data, setData] = useState<Payload | null>(null);
   const { toast } = useToast();
 
   const load = useCallback(async (force = false) => {
@@ -136,130 +213,95 @@ const FinanceStrategyDialog = () => {
     if (open && !data) load(false);
   }, [open, data, load]);
 
-  const congressCols = [
-    { key: "Representative", label: "議員" },
-    { key: "Ticker", label: "股票", render: TickerCell },
-    { key: "Transaction", label: "類型", render: TxCell },
-    { key: "Trade_Size_USD", label: "金額", render: (v: any, r: Row) => fmtNum(v ?? r.Amount ?? r.Range) },
-    { key: "TransactionDate", label: "交易日", render: fmtDate },
-    { key: "ReportDate", label: "申報日", render: fmtDate },
-  ];
-
-  const senatorCols = [
-    { key: "Senator", label: "參議員" },
-    { key: "Ticker", label: "股票", render: TickerCell },
-    { key: "Transaction", label: "類型", render: TxCell },
-    { key: "Amount", label: "金額範圍" },
-    { key: "Date", label: "交易日", render: fmtDate },
-  ];
-
-  const houseCols = [
-    { key: "Representative", label: "眾議員" },
-    { key: "Ticker", label: "股票", render: TickerCell },
-    { key: "Transaction", label: "類型", render: TxCell },
-    { key: "Amount", label: "金額範圍" },
-    { key: "TransactionDate", label: "交易日", render: fmtDate },
-  ];
-
-  const wsbCols = [
-    { key: "Ticker", label: "股票", render: TickerCell },
-    { key: "Count", label: "提及次數", render: (v: any, r: Row) => v ?? r.Mentions ?? "-" },
-    { key: "Sentiment", label: "情緒", render: (v: any) => v != null ? Number(v).toFixed(3) : "-" },
-    { key: "Rank", label: "排名" },
-    { key: "Date", label: "日期", render: fmtDate },
-  ];
-
-  const contractsCols = [
-    { key: "Ticker", label: "股票", render: TickerCell },
-    { key: "Agency", label: "機構" },
-    { key: "Amount", label: "合約金額", render: fmtNum },
-    { key: "Description", label: "描述", render: (v: any) => <span className="max-w-md truncate inline-block">{v || "-"}</span> },
-    { key: "Date", label: "日期", render: fmtDate },
-  ];
-
-  const lobbyingCols = [
-    { key: "Ticker", label: "股票", render: TickerCell },
-    { key: "Client", label: "客戶" },
-    { key: "Registrant", label: "遊說機構" },
-    { key: "Amount", label: "支出", render: fmtNum },
-    { key: "Date", label: "日期", render: fmtDate },
-  ];
-
-  const insidersCols = [
-    { key: "Ticker", label: "股票", render: TickerCell },
-    { key: "Name", label: "內部人" },
-    { key: "Title", label: "職位" },
-    { key: "AcquiredDisposedCode", label: "類型", render: (v: any) => v === "A" ? <Badge className="bg-green-500/20 text-green-600">取得</Badge> : v === "D" ? <Badge className="bg-red-500/20 text-red-600">處置</Badge> : v },
-    { key: "Shares", label: "股數", render: (v: any) => v ? Number(v).toLocaleString() : "-" },
-    { key: "PricePerShare", label: "每股價" },
-    { key: "Date", label: "日期", render: fmtDate },
-  ];
-
-  const offexchangeCols = [
-    { key: "Ticker", label: "股票", render: TickerCell },
-    { key: "DPI", label: "暗盤指數" },
-    { key: "ShortVolume", label: "沽空量", render: (v: any) => v ? Number(v).toLocaleString() : "-" },
-    { key: "TotalVolume", label: "總成交量", render: (v: any) => v ? Number(v).toLocaleString() : "-" },
-    { key: "Date", label: "日期", render: fmtDate },
-  ];
+  const marketMood = useMemo(() => {
+    if (!data?.indices?.length) return null;
+    const us = data.indices.filter((i) => ["^GSPC", "^IXIC", "^DJI"].includes(i.symbol));
+    const avg = us.reduce((s, i) => s + (i.changePercent ?? 0), 0) / (us.length || 1);
+    return { avg, up: avg >= 0 };
+  }, [data]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 text-white shadow-glow">
-          <TrendingUp className="w-4 h-4 mr-1" /> 財金策略
+        <Button size="sm" className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:opacity-90 text-white shadow-lg shadow-emerald-500/20">
+          <LineChart className="w-4 h-4 mr-1.5" /> 財金策略
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-500" />
-            財金策略 · Quiver Quantitative
-            <Button size="sm" variant="ghost" onClick={() => load(true)} disabled={loading} className="ml-auto">
+      <DialogContent className="max-w-6xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0">
+        <DialogHeader className="p-6 pb-4 border-b bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5">
+          <DialogTitle className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <LineChart className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="text-lg font-bold">財金策略儀表板</div>
+              <p className="text-xs text-muted-foreground font-normal mt-0.5">
+                全球市場即時脈動 · 免費實時數據
+                {data?.updatedAt && ` · 更新於 ${new Date(data.updatedAt).toLocaleTimeString("zh-HK")}`}
+              </p>
+            </div>
+            {marketMood && (
+              <Badge className={`${marketMood.up ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-rose-500/15 text-rose-600 border-rose-500/30"} border`}>
+                {marketMood.up ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+                美股情緒 {marketMood.up ? "+" : ""}{marketMood.avg.toFixed(2)}%
+              </Badge>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => load(true)} disabled={loading}>
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </DialogTitle>
-          {data?.updatedAt && (
-            <p className="text-xs text-muted-foreground">更新時間：{new Date(data.updatedAt).toLocaleString("zh-HK")}</p>
-          )}
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto p-6">
           {loading && !data ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />
-              載入中...
+            <div className="text-center py-20 text-muted-foreground">
+              <RefreshCw className="w-10 h-10 animate-spin mx-auto mb-4 text-emerald-500" />
+              <p>正在載入全球市場數據...</p>
             </div>
           ) : !data ? (
-            <p className="text-center py-16 text-muted-foreground">無資料</p>
+            <p className="text-center py-20 text-muted-foreground">無資料</p>
           ) : (
-            <Tabs defaultValue="congress" className="w-full">
-              <TabsList className="grid grid-cols-4 lg:grid-cols-8 gap-1 h-auto">
-                <TabsTrigger value="congress" className="text-xs">國會交易</TabsTrigger>
-                <TabsTrigger value="senator" className="text-xs">參議員</TabsTrigger>
-                <TabsTrigger value="house" className="text-xs">眾議員</TabsTrigger>
-                <TabsTrigger value="insiders" className="text-xs">內部人</TabsTrigger>
-                <TabsTrigger value="wsb" className="text-xs">WSB熱門</TabsTrigger>
-                <TabsTrigger value="contracts" className="text-xs">政府合約</TabsTrigger>
-                <TabsTrigger value="lobbying" className="text-xs">遊說</TabsTrigger>
-                <TabsTrigger value="offexchange" className="text-xs">暗盤</TabsTrigger>
-              </TabsList>
-              <Card className="mt-4 p-3">
-                <TabsContent value="congress"><DataTable rows={data.congress} cols={congressCols} locked={data.locked?.congress} /></TabsContent>
-                <TabsContent value="senator"><DataTable rows={data.senator} cols={senatorCols} locked={data.locked?.senator} /></TabsContent>
-                <TabsContent value="house"><DataTable rows={data.house} cols={houseCols} locked={data.locked?.house} /></TabsContent>
-                <TabsContent value="insiders"><DataTable rows={data.insiders} cols={insidersCols} locked={data.locked?.insiders} /></TabsContent>
-                <TabsContent value="wsb"><DataTable rows={data.wsb} cols={wsbCols} locked={data.locked?.wsb} /></TabsContent>
-                <TabsContent value="contracts"><DataTable rows={data.contracts} cols={contractsCols} locked={data.locked?.contracts} /></TabsContent>
-                <TabsContent value="lobbying"><DataTable rows={data.lobbying} cols={lobbyingCols} locked={data.locked?.lobbying} /></TabsContent>
-                <TabsContent value="offexchange"><DataTable rows={data.offexchange} cols={offexchangeCols} locked={data.locked?.offexchange} /></TabsContent>
-              </Card>
-            </Tabs>
+            <div className="space-y-6">
+              {/* Global indices */}
+              <section>
+                <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-primary" /> 全球主要指數
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {data.indices.map((q) => <IndexCard key={q.symbol} q={q} />)}
+                </div>
+              </section>
+
+              <Tabs defaultValue="gainers" className="w-full">
+                <TabsList className="grid grid-cols-4 w-full">
+                  <TabsTrigger value="gainers" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
+                    <TrendingUp className="w-3.5 h-3.5 mr-1.5" /> 升幅榜
+                  </TabsTrigger>
+                  <TabsTrigger value="losers" className="data-[state=active]:bg-rose-500 data-[state=active]:text-white">
+                    <TrendingDown className="w-3.5 h-3.5 mr-1.5" /> 跌幅榜
+                  </TabsTrigger>
+                  <TabsTrigger value="actives" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                    <Activity className="w-3.5 h-3.5 mr-1.5" /> 最活躍
+                  </TabsTrigger>
+                  <TabsTrigger value="crypto" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+                    <Bitcoin className="w-3.5 h-3.5 mr-1.5" /> 加密貨幣
+                  </TabsTrigger>
+                </TabsList>
+                <div className="mt-4">
+                  <TabsContent value="gainers"><StockList items={data.gainers} kind="gain" /></TabsContent>
+                  <TabsContent value="losers"><StockList items={data.losers} kind="loss" /></TabsContent>
+                  <TabsContent value="actives"><StockList items={data.actives} kind="active" /></TabsContent>
+                  <TabsContent value="crypto"><CryptoList items={data.crypto} /></TabsContent>
+                </div>
+              </Tabs>
+            </div>
           )}
         </div>
-        <p className="text-xs text-muted-foreground text-center pt-2 border-t">
-          資料來源：<a href="https://www.quiverquant.com/" target="_blank" rel="noreferrer" className="underline">Quiver Quantitative</a>
-        </p>
+        <div className="px-6 py-3 border-t bg-muted/30">
+          <p className="text-[11px] text-muted-foreground text-center">
+            資料來源：Yahoo Finance · CoinGecko · 僅供參考，並非投資建議
+          </p>
+        </div>
       </DialogContent>
     </Dialog>
   );
