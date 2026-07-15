@@ -5,7 +5,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Users, RefreshCw, TrendingUp, TrendingDown, ExternalLink, Search } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Users, RefreshCw, TrendingUp, TrendingDown, ExternalLink, Search, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,14 +28,24 @@ type Txn = {
 
 type Payload = {
   updatedAt: string;
+  windowDays: number;
   totalCount: number;
   transactions: Txn[];
   people: { name: string; count: number; transactions: Txn[] }[];
   topTickers: { ticker: string; count: number; buys: number; sells: number }[];
 };
 
-const CACHE_KEY = "celebrity-tracker-cache-v1";
+const DAY_OPTIONS = [
+  { value: 7, label: "最近 7 天" },
+  { value: 30, label: "最近 30 天" },
+  { value: 90, label: "最近 90 天" },
+  { value: 180, label: "最近 180 天" },
+  { value: 365, label: "過去一年" },
+];
+
 const CACHE_TTL = 10 * 60 * 1000;
+
+const cacheKey = (days: number) => `celebrity-tracker-cache-v2-${days}`;
 
 const TypeBadge = ({ type }: { type: string }) => {
   const isBuy = /purchase/i.test(type);
@@ -55,12 +72,13 @@ const CelebrityTrackerDialog = () => {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
+  const [days, setDays] = useState(365);
   const { toast } = useToast();
 
   const load = useCallback(async (force = false) => {
     if (!force) {
       try {
-        const raw = localStorage.getItem(CACHE_KEY);
+        const raw = localStorage.getItem(cacheKey(days));
         if (raw) {
           const p = JSON.parse(raw);
           if (Date.now() - p.ts < CACHE_TTL) {
@@ -72,12 +90,14 @@ const CelebrityTrackerDialog = () => {
     }
     setLoading(true);
     try {
-      const { data: res, error } = await supabase.functions.invoke("celebrity-tracker");
+      const { data: res, error } = await supabase.functions.invoke("celebrity-tracker", {
+        body: { days },
+      });
       if (error) throw error;
       if ((res as any)?.error) throw new Error((res as any).error);
       setData(res as Payload);
       try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: res }));
+        localStorage.setItem(cacheKey(days), JSON.stringify({ ts: Date.now(), data: res }));
       } catch {}
     } catch (e: any) {
       console.error(e);
@@ -85,11 +105,11 @@ const CelebrityTrackerDialog = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [days, toast]);
 
   useEffect(() => {
-    if (open && !data) load(false);
-  }, [open, data, load]);
+    if (open) load(false);
+  }, [open, days, load]);
 
   const filtered = useMemo(() => {
     if (!data) return [];
@@ -99,6 +119,11 @@ const CelebrityTrackerDialog = () => {
       t => t.name.toLowerCase().includes(q) || t.ticker.toLowerCase().includes(q)
     );
   }, [data, query]);
+
+  const windowLabel = useMemo(() => {
+    if (!data) return "";
+    return DAY_OPTIONS.find(o => o.value === data.windowDays)?.label || `最近 ${data.windowDays} 天`;
+  }, [data]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -120,9 +145,26 @@ const CelebrityTrackerDialog = () => {
             <div className="flex items-center gap-2">
               {data && (
                 <span className="text-xs text-muted-foreground font-normal">
-                  {data.totalCount} 筆 · 最近 7 天
+                  {data.totalCount} 筆 · {windowLabel}
                 </span>
               )}
+              <Select
+                value={String(days)}
+                onValueChange={v => setDays(Number(v))}
+                disabled={loading}
+              >
+                <SelectTrigger className="w-[130px] h-8 text-xs">
+                  <CalendarDays className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
+                  <SelectValue placeholder="選擇時間範圍" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DAY_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={String(o.value)}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button size="sm" variant="ghost" onClick={() => load(true)} disabled={loading}>
                 <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
@@ -143,7 +185,7 @@ const CelebrityTrackerDialog = () => {
           </div>
         ) : data.totalCount === 0 ? (
           <div className="flex-1 flex items-center justify-center py-16 text-muted-foreground text-sm">
-            最近 7 天沒有符合條件的披露紀錄
+            {windowLabel}沒有符合條件的披露紀錄
           </div>
         ) : (
           <Tabs defaultValue="txns" className="flex-1 flex flex-col overflow-hidden">
