@@ -48,13 +48,24 @@ const daysAgo = (ms: number) => (Date.now() - ms) / (1000 * 60 * 60 * 24);
 
 let cache: { data: any; ts: number } | null = null;
 const TTL = 30 * 60 * 1000;
+const MAX_DAYS = 365;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const url = new URL(req.url);
-    const windowDays = Math.max(1, Math.min(90, Number(url.searchParams.get('days')) || 7));
+    let windowDays = 365;
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      windowDays = Math.max(1, Math.min(MAX_DAYS, Number(url.searchParams.get('days')) || windowDays));
+    } else if (req.method === 'POST') {
+      try {
+        const body = await req.json();
+        windowDays = Math.max(1, Math.min(MAX_DAYS, Number(body?.days) || windowDays));
+      } catch {
+        // keep default
+      }
+    }
 
     if (cache && Date.now() - cache.ts < TTL && cache.data.windowDays === windowDays) {
       return new Response(JSON.stringify(cache.data), {
@@ -77,9 +88,9 @@ Deno.serve(async (req) => {
     let effectiveDays = windowDays;
     let cleaned = filterAndMap(raw, effectiveDays);
 
-    // If nothing recent (weekend / holiday gap), auto-expand up to 30 days
-    while (cleaned.length === 0 && effectiveDays < 30) {
-      effectiveDays = Math.min(effectiveDays + 7, 30);
+    // If the chosen range is empty, auto-expand up to one year
+    while (cleaned.length === 0 && effectiveDays < MAX_DAYS) {
+      effectiveDays = Math.min(effectiveDays + 30, MAX_DAYS);
       cleaned = filterAndMap(raw, effectiveDays);
     }
 
