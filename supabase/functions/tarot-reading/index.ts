@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
         'Authorization': `Bearer ${lovableKey}`,
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: '你是專業塔羅占卜師，只以繁體中文回應，只輸出合法 JSON。' },
           { role: 'user', content: prompt },
