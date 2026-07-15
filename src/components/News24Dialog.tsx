@@ -135,7 +135,7 @@ const News24Dialog = () => {
                   {r.articles.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">此地區暫無 24 小時內熱門新聞</p>
                   ) : (
-                    r.articles.slice(0, 3).map((a, i) => (
+                    r.articles.slice(0, 10).map((a, i) => (
                       <Card key={i} className="overflow-hidden">
                         <CardContent className="p-4 flex gap-4">
                           {a.urlToImage && (

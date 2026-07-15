@@ -83,41 +83,41 @@ async function fetchRegion(region: { code: string; label: string; country?: stri
       q: query,
       from,
       sortBy: 'publishedAt',
-      pageSize: '20',
+      pageSize: '40',
       apiKey: NEWSAPI_KEY,
     });
     if (region.language) params.set('language', region.language);
     pool = cleanArticles([...pool, ...await fetchNewsApi(`https://newsapi.org/v2/everything?${params}`, region.code)]);
-    if (pool.length >= 3) break;
+    if (pool.length >= 10) break;
   }
 
   // If Supabase/NewsAPI clocks disagree or the 24h search is sparse, retry without `from`.
-  if (pool.length < 3) {
+  if (pool.length < 10) {
     for (const query of region.queries) {
       const params = new URLSearchParams({
         q: query,
         sortBy: 'publishedAt',
-        pageSize: '20',
+        pageSize: '40',
         apiKey: NEWSAPI_KEY,
       });
       if (region.language) params.set('language', region.language);
       pool = cleanArticles([...pool, ...await fetchNewsApi(`https://newsapi.org/v2/everything?${params}`, region.code)]);
-      if (pool.length >= 3) break;
+      if (pool.length >= 10) break;
     }
   }
 
   // Last fallback: country headlines for supported regions.
-  if (pool.length < 3 && region.country) {
+  if (pool.length < 10 && region.country) {
     const params = new URLSearchParams({
       country: region.country,
-      pageSize: '20',
+      pageSize: '40',
       apiKey: NEWSAPI_KEY,
     });
     pool = cleanArticles([...pool, ...await fetchNewsApi(`https://newsapi.org/v2/top-headlines?${params}`, region.code)]);
   }
 
-  const exact24h = pool.filter((a: any) => a.publishedAt && new Date(a.publishedAt).getTime() >= Date.now() - DAY_MS);
-  const articles = (exact24h.length >= 3 ? exact24h : pool).slice(0, 3);
+    const exact24h = pool.filter((a: any) => a.publishedAt && new Date(a.publishedAt).getTime() >= Date.now() - DAY_MS);
+    const articles = (exact24h.length >= 10 ? exact24h : pool).slice(0, 10);
 
   // translate title+description
   const toTranslate: string[] = [];

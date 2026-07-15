@@ -93,9 +93,27 @@ Deno.serve(async (req) => {
     if (!city && current?.name) city = current.name
     if (!country_code && current?.sys?.country) country_code = current.sys.country
 
+    // Reverse geocode via OpenStreetMap Nominatim to get district / neighborhood
+    let district = ''
+    let suburb = ''
+    let road = ''
+    try {
+      const rgRes = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=14&accept-language=zh-TW`,
+        { headers: { 'User-Agent': 'catman-weather-widget/1.0' } },
+      )
+      const rg: any = await safeJson(rgRes) || {}
+      const addr = rg.address || {}
+      district = addr.city_district || addr.district || addr.county || addr.state_district || ''
+      suburb = addr.suburb || addr.neighbourhood || addr.quarter || addr.village || addr.town || ''
+      road = addr.road || ''
+    } catch (e) {
+      console.warn('nominatim reverse failed', e)
+    }
+
     const payload = {
       ip,
-      location: { city, region, country, country_code, lat, lon, timezone },
+      location: { city, region, country, country_code, lat, lon, timezone, district, suburb, road },
       current,
       forecast,
       air,
