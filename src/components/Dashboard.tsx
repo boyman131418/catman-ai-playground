@@ -18,6 +18,7 @@ import MembershipManagement from "./MembershipManagement";
 import AnnouncementBoard from "./AnnouncementBoard";
 import RandomCats from "./RandomCats";
 import WeatherWidget from "./WeatherWidget";
+import News24Dialog from "./News24Dialog";
 
 interface Category {
   id: string;
