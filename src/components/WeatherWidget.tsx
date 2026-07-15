@@ -130,7 +130,7 @@ const WeatherWidget = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const city = data?.location?.city;
+  const city = data?.location?.suburb || data?.location?.district || data?.location?.city;
   const temp = data?.current?.main?.temp;
   const icon = data?.current?.weather?.[0]?.icon;
   const desc = data?.current?.weather?.[0]?.description;
