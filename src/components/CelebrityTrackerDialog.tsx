@@ -91,6 +91,7 @@ const CelebrityTrackerDialog = () => {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [days, setDays] = useState(365);
+  const [holdingsPerson, setHoldingsPerson] = useState<Payload["people"][number] | null>(null);
   const { toast } = useToast();
 
   const load = useCallback(async (force = false) => {
