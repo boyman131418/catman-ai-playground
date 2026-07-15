@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const Tarot = lazy(() => import("./pages/Tarot"));
 const Astro = lazy(() => import("./pages/Astro"));
 
 const queryClient = new QueryClient();
@@ -21,7 +20,7 @@ const App = () => (
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-2xl">🐱</div></div>}>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/tarot" element={<Tarot />} />
+            <Route path="/astro" element={<Astro />} />
             <Route path="/astro" element={<Astro />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -302,15 +302,6 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
             <Button
               asChild
               size="sm"
-              className="bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 text-white shadow-glow"
-            >
-              <Link to="/tarot">
-                <Sparkles className="w-4 h-4 mr-1" /> 塔羅占卜
-              </Link>
-            </Button>
-            <Button
-              asChild
-              size="sm"
               className="bg-gradient-to-r from-sky-500 to-indigo-500 hover:opacity-90 text-white shadow-glow"
             >
               <Link to="/astro">
