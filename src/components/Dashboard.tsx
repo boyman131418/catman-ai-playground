@@ -16,6 +16,7 @@ import AdminPanel from "./AdminPanel";
 import MembershipApplication from "./MembershipApplication";
 import MembershipManagement from "./MembershipManagement";
 import AnnouncementBoard from "./AnnouncementBoard";
+import RandomCats from "./RandomCats";
 
 interface Category {
   id: string;
@@ -352,14 +353,8 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Welcome Section */}
-          <div className="text-center space-y-4">
-            <h2 className="text-4xl font-bold text-foreground">
-              歡迎回來！ 🎉
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              會員權限系統已啟用，享受個人化的內容體驗
-            </p>
-          </div>
+          <RandomCats />
+
 
           {/* Announcement Board */}
           <AnnouncementBoard isAdmin={isAdmin} adminMode={adminMode} />
