@@ -83,34 +83,34 @@ async function fetchRegion(region: { code: string; label: string; country?: stri
       q: query,
       from,
       sortBy: 'publishedAt',
-      pageSize: '20',
+      pageSize: '40',
       apiKey: NEWSAPI_KEY,
     });
     if (region.language) params.set('language', region.language);
     pool = cleanArticles([...pool, ...await fetchNewsApi(`https://newsapi.org/v2/everything?${params}`, region.code)]);
-    if (pool.length >= 3) break;
+    if (pool.length >= 10) break;
   }
 
   // If Supabase/NewsAPI clocks disagree or the 24h search is sparse, retry without `from`.
-  if (pool.length < 3) {
+  if (pool.length < 10) {
     for (const query of region.queries) {
       const params = new URLSearchParams({
         q: query,
         sortBy: 'publishedAt',
-        pageSize: '20',
+        pageSize: '40',
         apiKey: NEWSAPI_KEY,
       });
       if (region.language) params.set('language', region.language);
       pool = cleanArticles([...pool, ...await fetchNewsApi(`https://newsapi.org/v2/everything?${params}`, region.code)]);
-      if (pool.length >= 3) break;
+      if (pool.length >= 10) break;
     }
   }
 
   // Last fallback: country headlines for supported regions.
-  if (pool.length < 3 && region.country) {
+  if (pool.length < 10 && region.country) {
     const params = new URLSearchParams({
       country: region.country,
-      pageSize: '20',
+      pageSize: '40',
       apiKey: NEWSAPI_KEY,
     });
     pool = cleanArticles([...pool, ...await fetchNewsApi(`https://newsapi.org/v2/top-headlines?${params}`, region.code)]);
