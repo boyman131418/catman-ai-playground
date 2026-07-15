@@ -19,6 +19,9 @@ interface WeatherData {
     lat?: number;
     lon?: number;
     timezone?: string;
+    district?: string;
+    suburb?: string;
+    road?: string;
   };
   current?: any;
   forecast?: any;
