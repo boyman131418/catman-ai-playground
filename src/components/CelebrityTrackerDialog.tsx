@@ -30,9 +30,15 @@ type Payload = {
   updatedAt: string;
   windowDays: number;
   totalCount: number;
+  flow: {
+    totalBuy: number;
+    totalSell: number;
+    netFlow: number;
+    totalVolume: number;
+  };
   transactions: Txn[];
-  people: { name: string; count: number; transactions: Txn[] }[];
-  topTickers: { ticker: string; count: number; buys: number; sells: number }[];
+  people: { name: string; count: number; buyAmount: number; sellAmount: number; netFlow: number; totalAmount: number; transactions: Txn[] }[];
+  topTickers: { ticker: string; count: number; buys: number; sells: number; buyAmount: number; sellAmount: number; netFlow: number; totalAmount: number }[];
 };
 
 const DAY_OPTIONS = [
@@ -45,7 +51,16 @@ const DAY_OPTIONS = [
 
 const CACHE_TTL = 10 * 60 * 1000;
 
-const cacheKey = (days: number) => `celebrity-tracker-cache-v2-${days}`;
+const cacheKey = (days: number) => `celebrity-tracker-cache-v3-${days}`;
+
+const fmtMoney = (n: number) => {
+  if (!n || isNaN(n)) return "$0";
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `${n < 0 ? "-" : ""}$${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${n < 0 ? "-" : ""}$${(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${n < 0 ? "-" : ""}$${(abs / 1e3).toFixed(1)}K`;
+  return `${n < 0 ? "-" : ""}$${abs.toFixed(0)}`;
+};
 
 const TypeBadge = ({ type }: { type: string }) => {
   const isBuy = /purchase/i.test(type);
