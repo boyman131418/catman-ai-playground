@@ -170,7 +170,9 @@ const WeatherWidget = () => {
                 <div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="w-3 h-3" />
-                    {data.location?.city}, {data.location?.country}
+                    {[data.location?.suburb, data.location?.district, data.location?.city, data.location?.country]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </div>
                   <div className="text-[10px] text-muted-foreground/70 mt-0.5">
                     IP: {data.ip}
