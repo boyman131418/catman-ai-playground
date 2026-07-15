@@ -36,7 +36,7 @@ interface Payload {
   crypto: Quote[];
 }
 
-const CACHE_KEY = "finance-strategy-cache-v2";
+const CACHE_KEY = "finance-strategy-cache-v3";
 const CACHE_TTL = 5 * 60 * 1000;
 
 const fmtPrice = (v: any, digits = 2) => {
