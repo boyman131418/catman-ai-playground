@@ -300,6 +300,15 @@ const CelebrityTrackerDialog = () => {
                         淨 {p.netFlow >= 0 ? "+" : ""}{fmtMoney(p.netFlow)}
                       </span>
                       <Badge variant="secondary">{p.count} 筆</Badge>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-xs border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+                        onClick={() => setHoldingsPerson(p)}
+                      >
+                        <Briefcase className="w-3 h-3 mr-1" />
+                        查看持倉
+                      </Button>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
