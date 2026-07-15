@@ -14,6 +14,3 @@ verify_jwt = false
 
 [functions.finance-strategy]
 verify_jwt = false
-
-[functions.quiver-probe]
-verify_jwt = false

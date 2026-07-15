@@ -3,7 +3,13 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 const API_KEY = Deno.env.get('QUIVERQUANT_API_KEY');
 const BASE = 'https://api.quiverquant.com/beta';
 
-async function fetchQuiver(path: string) {
+interface Result {
+  data: any[];
+  locked: boolean;
+  error?: string;
+}
+
+async function fetchQuiver(path: string): Promise<Result> {
   try {
     const res = await fetch(`${BASE}${path}`, {
       headers: {
@@ -11,15 +17,16 @@ async function fetchQuiver(path: string) {
         'Authorization': `Token ${API_KEY}`,
       },
     });
+    if (res.status === 403) {
+      return { data: [], locked: true };
+    }
     if (!res.ok) {
-      console.error(`Quiver ${path} failed: ${res.status}`);
-      return [];
+      return { data: [], locked: false, error: `HTTP ${res.status}` };
     }
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    return { data: Array.isArray(data) ? data : [], locked: false };
   } catch (e) {
-    console.error(`Quiver ${path} error:`, e);
-    return [];
+    return { data: [], locked: false, error: String(e) };
   }
 }
 
@@ -27,43 +34,31 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const [
-      congress,
-      senator,
-      house,
-      wsb,
-      contracts,
-      lobbying,
-      insiders,
-      offexchange,
-    ] = await Promise.all([
-      fetchQuiver('/live/congresstrading'),
-      fetchQuiver('/live/senatetrading'),
-      fetchQuiver('/live/housetrading'),
-      fetchQuiver('/live/wallstreetbets'),
-      fetchQuiver('/live/govcontractsall'),
-      fetchQuiver('/live/lobbying'),
-      fetchQuiver('/live/insiders'),
-      fetchQuiver('/live/offexchange'),
-    ]);
+    const endpoints: [string, string][] = [
+      ['congress', '/live/congresstrading'],
+      ['senator', '/live/senatetrading'],
+      ['house', '/live/housetrading'],
+      ['wsb', '/live/wallstreetbets'],
+      ['contracts', '/live/govcontractsall'],
+      ['lobbying', '/live/lobbying'],
+      ['insiders', '/live/insiders'],
+      ['offexchange', '/live/offexchange'],
+    ];
 
-    const payload = {
+    const results = await Promise.all(endpoints.map(([_, p]) => fetchQuiver(p)));
+    const payload: Record<string, any> = {
       updatedAt: new Date().toISOString(),
-      congress: congress.slice(0, 25),
-      senator: senator.slice(0, 25),
-      house: house.slice(0, 25),
-      wsb: wsb.slice(0, 25),
-      contracts: contracts.slice(0, 25),
-      lobbying: lobbying.slice(0, 25),
-      insiders: insiders.slice(0, 25),
-      offexchange: offexchange.slice(0, 25),
+      locked: {},
     };
+    endpoints.forEach(([key], i) => {
+      payload[key] = results[i].data.slice(0, 30);
+      payload.locked[key] = results[i].locked;
+    });
 
     return new Response(JSON.stringify(payload), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
-    console.error('finance-strategy error:', e);
     return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
