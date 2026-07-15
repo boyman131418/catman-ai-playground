@@ -372,8 +372,172 @@ const CelebrityTrackerDialog = () => {
           </Tabs>
         )}
       </DialogContent>
+      <HoldingsDialog person={holdingsPerson} onClose={() => setHoldingsPerson(null)} />
     </Dialog>
   );
 };
+
+type PersonType = Payload["people"][number];
+
+const HoldingsDialog = ({ person, onClose }: { person: PersonType | null; onClose: () => void }) => {
+  const holdings = useMemo(() => {
+    if (!person) return [];
+    const map: Record<string, {
+      ticker: string;
+      buys: number;
+      sells: number;
+      buyAmount: number;
+      sellAmount: number;
+      netFlow: number;
+      lastDate: string;
+      lastMs: number;
+      lastType: string;
+      asset_description?: string | null;
+    }> = {};
+    for (const t of person.transactions) {
+      const key = t.ticker;
+      if (!map[key]) {
+        map[key] = {
+          ticker: key,
+          buys: 0,
+          sells: 0,
+          buyAmount: 0,
+          sellAmount: 0,
+          netFlow: 0,
+          lastDate: "",
+          lastMs: 0,
+          lastType: "",
+          asset_description: t.asset_description,
+        };
+      }
+      const h = map[key];
+      const amt = parseAmountClient(t.amount);
+      if (/purchase/i.test(t.type)) { h.buys++; h.buyAmount += amt; }
+      else if (/sale/i.test(t.type)) { h.sells++; h.sellAmount += amt; }
+      const ms = Date.parse(t.disclosure_date || t.transaction_date || "");
+      if (!isNaN(ms) && ms > h.lastMs) {
+        h.lastMs = ms;
+        h.lastDate = t.disclosure_date || t.transaction_date || "";
+        h.lastType = t.type;
+      }
+    }
+    return Object.values(map)
+      .map(h => ({ ...h, netFlow: h.buyAmount - h.sellAmount }))
+      .sort((a, b) => b.netFlow - a.netFlow);
+  }, [person]);
+
+  const summary = useMemo(() => {
+    const held = holdings.filter(h => h.netFlow > 0);
+    const closed = holdings.filter(h => h.netFlow <= 0);
+    const totalNet = held.reduce((s, h) => s + h.netFlow, 0);
+    return { held, closed, totalNet };
+  }, [holdings]);
+
+  return (
+    <Dialog open={!!person} onOpenChange={o => !o && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-amber-500" />
+            {person?.name} · 估算持倉
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-xs text-muted-foreground -mt-2">
+          ⚠️ 參議院披露只有交易紀錄冇實際股數，以下持倉係由「買入 − 賣出」金額區間中位數推算，只作參考。
+        </p>
+
+        <div className="grid grid-cols-3 gap-2 my-2">
+          <Card className="p-3 bg-gradient-to-br from-emerald-500/10 to-transparent border-emerald-500/30">
+            <div className="text-xs text-muted-foreground mb-1">仍持有股票</div>
+            <div className="text-lg font-bold text-emerald-500">{summary.held.length}</div>
+          </Card>
+          <Card className="p-3 bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/30">
+            <div className="text-xs text-muted-foreground mb-1">估算持倉市值</div>
+            <div className="text-lg font-bold text-amber-500">{fmtMoney(summary.totalNet)}</div>
+          </Card>
+          <Card className="p-3 bg-gradient-to-br from-muted/40 to-transparent">
+            <div className="text-xs text-muted-foreground mb-1">已平倉/減持</div>
+            <div className="text-lg font-bold text-muted-foreground">{summary.closed.length}</div>
+          </Card>
+        </div>
+
+        <div className="flex-1 overflow-auto space-y-2 pr-1">
+          <div className="text-xs font-semibold text-emerald-500 sticky top-0 bg-background py-1">
+            目前持有 ({summary.held.length})
+          </div>
+          {summary.held.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-4">冇淨買入紀錄</p>
+          )}
+          {summary.held.map(h => (
+            <Card key={h.ticker} className="p-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <a
+                    href={`https://finance.yahoo.com/quote/${h.ticker}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono font-bold text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    {h.ticker}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                  {h.asset_description && (
+                    <span className="text-xs text-muted-foreground truncate max-w-[240px]">{h.asset_description}</span>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-emerald-500">
+                    +{fmtMoney(h.netFlow)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">估算淨持倉</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs mt-2 flex-wrap">
+                <span className="text-emerald-500">買 {h.buys} · {fmtMoney(h.buyAmount)}</span>
+                <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                <span className="text-rose-500">賣 {h.sells} · {fmtMoney(h.sellAmount)}</span>
+                {h.lastDate && (
+                  <span className="ml-auto text-muted-foreground">
+                    最近 {h.lastType} · {h.lastDate}
+                  </span>
+                )}
+              </div>
+            </Card>
+          ))}
+
+          {summary.closed.length > 0 && (
+            <>
+              <div className="text-xs font-semibold text-muted-foreground sticky top-0 bg-background py-1 mt-4">
+                已平倉/淨賣出 ({summary.closed.length})
+              </div>
+              {summary.closed.map(h => (
+                <Card key={h.ticker} className="p-2 opacity-70">
+                  <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+                    <span className="font-mono font-semibold">{h.ticker}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-emerald-500">買 {fmtMoney(h.buyAmount)}</span>
+                      <span className="text-rose-500">賣 {fmtMoney(h.sellAmount)}</span>
+                      <span className="text-rose-500 font-semibold">淨 {fmtMoney(h.netFlow)}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+function parseAmountClient(s: string): number {
+  if (!s) return 0;
+  const nums = String(s).match(/[\d,]+/g);
+  if (!nums) return 0;
+  const vals = nums.map(n => Number(n.replace(/,/g, ""))).filter(n => !isNaN(n));
+  if (vals.length === 0) return 0;
+  if (vals.length === 1) return vals[0];
+  return (vals[0] + vals[1]) / 2;
+}
 
 export default CelebrityTrackerDialog;
