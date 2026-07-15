@@ -48,7 +48,7 @@ const daysAgo = (ms: number) => (Date.now() - ms) / (1000 * 60 * 60 * 24);
 
 let cache: { data: any; ts: number } | null = null;
 const TTL = 30 * 60 * 1000;
-const MAX_DAYS = 365;
+const MAX_DAYS = 365 * 10;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
