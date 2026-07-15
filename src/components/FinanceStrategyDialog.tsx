@@ -45,7 +45,18 @@ const fmtNum = (v: any) => {
 const tickerLink = (t: string) =>
   t ? `https://www.quiverquant.com/stock/${encodeURIComponent(t)}` : "#";
 
-const DataTable = ({ rows, cols }: { rows: Row[]; cols: { key: string; label: string; render?: (v: any, r: Row) => any }[] }) => {
+const LockedNotice = () => (
+  <div className="text-center py-10 space-y-2">
+    <p className="text-sm font-medium">此數據集需要升級 Quiver Quantitative 訂閱</p>
+    <p className="text-xs text-muted-foreground">你目前的 API Key 為免費層級，未包含此資料。</p>
+    <Button size="sm" variant="outline" asChild>
+      <a href="https://www.quiverquant.com/pricing/" target="_blank" rel="noreferrer">升級方案 <ExternalLink className="w-3 h-3 ml-1" /></a>
+    </Button>
+  </div>
+);
+
+const DataTable = ({ rows, cols, locked }: { rows: Row[]; cols: { key: string; label: string; render?: (v: any, r: Row) => any }[]; locked?: boolean }) => {
+  if (locked) return <LockedNotice />;
   if (!rows || rows.length === 0) {
     return <p className="text-sm text-muted-foreground py-8 text-center">暫無資料</p>;
   }
