@@ -96,29 +96,49 @@ Deno.serve(async (req) => {
 
     cleaned.sort((a, b) => b.disclosureMs - a.disclosureMs);
 
+    // Global flow totals
+    let totalBuy = 0, totalSell = 0;
+
     // Aggregate by person
     const byPerson: Record<string, any> = {};
     for (const t of cleaned) {
-      if (!byPerson[t.name]) byPerson[t.name] = { name: t.name, count: 0, transactions: [] };
-      byPerson[t.name].count++;
-      byPerson[t.name].transactions.push(strip(t));
+      if (!byPerson[t.name]) byPerson[t.name] = { name: t.name, count: 0, buyAmount: 0, sellAmount: 0, transactions: [] };
+      const p = byPerson[t.name];
+      p.count++;
+      const est = t.amountValue || 0;
+      if (/purchase/i.test(t.type)) { p.buyAmount += est; totalBuy += est; }
+      else if (/sale/i.test(t.type)) { p.sellAmount += est; totalSell += est; }
+      p.transactions.push(strip(t));
     }
-    const people = Object.values(byPerson).sort((a: any, b: any) => b.count - a.count);
+    const people = Object.values(byPerson)
+      .map((p: any) => ({ ...p, netFlow: p.buyAmount - p.sellAmount, totalAmount: p.buyAmount + p.sellAmount }))
+      .sort((a: any, b: any) => b.count - a.count);
 
     // Aggregate by ticker
     const byTicker: Record<string, any> = {};
     for (const t of cleaned) {
-      if (!byTicker[t.ticker]) byTicker[t.ticker] = { ticker: t.ticker, count: 0, buys: 0, sells: 0 };
-      byTicker[t.ticker].count++;
-      if (/purchase/i.test(t.type)) byTicker[t.ticker].buys++;
-      else if (/sale/i.test(t.type)) byTicker[t.ticker].sells++;
+      if (!byTicker[t.ticker]) byTicker[t.ticker] = { ticker: t.ticker, count: 0, buys: 0, sells: 0, buyAmount: 0, sellAmount: 0 };
+      const b = byTicker[t.ticker];
+      b.count++;
+      const est = t.amountValue || 0;
+      if (/purchase/i.test(t.type)) { b.buys++; b.buyAmount += est; }
+      else if (/sale/i.test(t.type)) { b.sells++; b.sellAmount += est; }
     }
-    const tickers = Object.values(byTicker).sort((a: any, b: any) => b.count - a.count).slice(0, 40);
+    const tickers = Object.values(byTicker)
+      .map((t: any) => ({ ...t, netFlow: t.buyAmount - t.sellAmount, totalAmount: t.buyAmount + t.sellAmount }))
+      .sort((a: any, b: any) => b.totalAmount - a.totalAmount)
+      .slice(0, 60);
 
     const payload = {
       updatedAt: new Date().toISOString(),
       windowDays: effectiveDays,
       totalCount: cleaned.length,
+      flow: {
+        totalBuy,
+        totalSell,
+        netFlow: totalBuy - totalSell,
+        totalVolume: totalBuy + totalSell,
+      },
       transactions: cleaned.slice(0, 300).map(strip),
       people: people.slice(0, 40),
       topTickers: tickers,
