@@ -45,11 +45,11 @@ async function coinGecko() {
 }
 
 async function yahooIndices() {
-  const symbols = ['^GSPC', '^IXIC', '^DJI', '^RUT', '^VIX', '^HSI', '^N225', '000001.SS', '^FTSE', '^GDAXI'];
+  const symbols = ['^GSPC', '^IXIC', '^DJI', 'BTC-USD', '^VIX', '^HSI', '^N225', '000001.SS', '^FTSE', '^GDAXI'];
   const url = `https://query1.finance.yahoo.com/v7/finance/spark?symbols=${symbols.join(',')}&range=1d&interval=5m`;
   const res = await fetch(url, { headers: { 'User-Agent': UA, 'Accept': 'application/json' } });
   const names: Record<string, string> = {
-    '^GSPC': 'S&P 500', '^IXIC': 'NASDAQ', '^DJI': 'Dow Jones', '^RUT': 'Russell 2000',
+    '^GSPC': 'S&P 500', '^IXIC': 'NASDAQ', '^DJI': 'Dow Jones', 'BTC-USD': 'BTC 比特幣',
     '^VIX': 'VIX 恐慌指數', '^HSI': '恒生指數', '^N225': '日經 225',
     '000001.SS': '上證指數', '^FTSE': '英國 FTSE 100', '^GDAXI': '德國 DAX',
   };
