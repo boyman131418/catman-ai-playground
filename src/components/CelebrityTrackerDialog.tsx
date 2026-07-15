@@ -47,6 +47,9 @@ const DAY_OPTIONS = [
   { value: 90, label: "最近 90 天" },
   { value: 180, label: "最近 180 天" },
   { value: 365, label: "過去一年" },
+  { value: 365 * 3, label: "過去 3 年" },
+  { value: 365 * 5, label: "過去 5 年" },
+  { value: 365 * 10, label: "過去 10 年" },
 ];
 
 const CACHE_TTL = 10 * 60 * 1000;
