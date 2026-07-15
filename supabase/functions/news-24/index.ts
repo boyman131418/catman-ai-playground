@@ -18,6 +18,10 @@ const REGIONS: { code: string; label: string; country?: string; queries: string[
   { code: 'jp', label: '日本', country: 'jp', queries: ['Japan', '日本'], language: 'en' },
 ];
 
+function hasArticles(rows: any[]) {
+  return rows.some((row) => Array.isArray(row?.articles) && row.articles.length > 0);
+}
+
 async function translateToChinese(texts: string[]): Promise<string[]> {
   if (!LOVABLE_API_KEY || texts.length === 0) return texts;
   try {
@@ -151,7 +155,7 @@ Deno.serve(async (req) => {
         .from('news_cache')
         .select('*')
         .order('fetched_at', { ascending: false });
-      if (cached && cached.length >= REGIONS.length) {
+      if (cached && cached.length >= REGIONS.length && hasArticles(cached)) {
         const newest = new Date(cached[0].fetched_at).getTime();
         if (Date.now() - newest < 60 * 60 * 1000) {
           return new Response(JSON.stringify({ regions: cached, cached: true }), {
