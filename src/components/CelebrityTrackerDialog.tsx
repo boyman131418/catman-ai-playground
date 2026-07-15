@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Users, RefreshCw, TrendingUp, TrendingDown, ExternalLink, Search, CalendarDays } from "lucide-react";
+import { Users, RefreshCw, TrendingUp, TrendingDown, ExternalLink, Search, CalendarDays, Briefcase, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
