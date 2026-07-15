@@ -30,9 +30,15 @@ type Payload = {
   updatedAt: string;
   windowDays: number;
   totalCount: number;
+  flow: {
+    totalBuy: number;
+    totalSell: number;
+    netFlow: number;
+    totalVolume: number;
+  };
   transactions: Txn[];
-  people: { name: string; count: number; transactions: Txn[] }[];
-  topTickers: { ticker: string; count: number; buys: number; sells: number }[];
+  people: { name: string; count: number; buyAmount: number; sellAmount: number; netFlow: number; totalAmount: number; transactions: Txn[] }[];
+  topTickers: { ticker: string; count: number; buys: number; sells: number; buyAmount: number; sellAmount: number; netFlow: number; totalAmount: number }[];
 };
 
 const DAY_OPTIONS = [
@@ -45,7 +51,16 @@ const DAY_OPTIONS = [
 
 const CACHE_TTL = 10 * 60 * 1000;
 
-const cacheKey = (days: number) => `celebrity-tracker-cache-v2-${days}`;
+const cacheKey = (days: number) => `celebrity-tracker-cache-v3-${days}`;
+
+const fmtMoney = (n: number) => {
+  if (!n || isNaN(n)) return "$0";
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `${n < 0 ? "-" : ""}$${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${n < 0 ? "-" : ""}$${(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${n < 0 ? "-" : ""}$${(abs / 1e3).toFixed(1)}K`;
+  return `${n < 0 ? "-" : ""}$${abs.toFixed(0)}`;
+};
 
 const TypeBadge = ({ type }: { type: string }) => {
   const isBuy = /purchase/i.test(type);
@@ -189,6 +204,32 @@ const CelebrityTrackerDialog = () => {
           </div>
         ) : (
           <Tabs defaultValue="txns" className="flex-1 flex flex-col overflow-hidden">
+            {/* Flow Summary */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+              <Card className="p-3 bg-gradient-to-br from-emerald-500/10 to-transparent border-emerald-500/30">
+                <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-emerald-500" /> 買入流入
+                </div>
+                <div className="text-lg font-bold text-emerald-500">{fmtMoney(data.flow.totalBuy)}</div>
+              </Card>
+              <Card className="p-3 bg-gradient-to-br from-rose-500/10 to-transparent border-rose-500/30">
+                <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <TrendingDown className="w-3 h-3 text-rose-500" /> 賣出流出
+                </div>
+                <div className="text-lg font-bold text-rose-500">{fmtMoney(data.flow.totalSell)}</div>
+              </Card>
+              <Card className={`p-3 bg-gradient-to-br ${data.flow.netFlow >= 0 ? "from-emerald-500/10 border-emerald-500/30" : "from-rose-500/10 border-rose-500/30"} to-transparent`}>
+                <div className="text-xs text-muted-foreground mb-1">淨流向</div>
+                <div className={`text-lg font-bold ${data.flow.netFlow >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                  {data.flow.netFlow >= 0 ? "+" : ""}{fmtMoney(data.flow.netFlow)}
+                </div>
+              </Card>
+              <Card className="p-3 bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/30">
+                <div className="text-xs text-muted-foreground mb-1">總成交額</div>
+                <div className="text-lg font-bold text-amber-500">{fmtMoney(data.flow.totalVolume)}</div>
+              </Card>
+            </div>
+
             <TabsList className="grid grid-cols-3 w-full">
               <TabsTrigger value="txns">最新交易</TabsTrigger>
               <TabsTrigger value="people">活躍人物</TabsTrigger>
@@ -246,9 +287,16 @@ const CelebrityTrackerDialog = () => {
             <TabsContent value="people" className="flex-1 overflow-auto mt-3 space-y-2 pr-1">
               {data.people.map((p, i) => (
                 <Card key={i} className="p-3">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                     <span className="font-semibold">{p.name}</span>
-                    <Badge variant="secondary">{p.count} 筆交易</Badge>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-emerald-500">買 {fmtMoney(p.buyAmount)}</span>
+                      <span className="text-rose-500">賣 {fmtMoney(p.sellAmount)}</span>
+                      <span className={p.netFlow >= 0 ? "text-emerald-500 font-semibold" : "text-rose-500 font-semibold"}>
+                        淨 {p.netFlow >= 0 ? "+" : ""}{fmtMoney(p.netFlow)}
+                      </span>
+                      <Badge variant="secondary">{p.count} 筆</Badge>
+                    </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {p.transactions.slice(0, 8).map((t, j) => (
@@ -271,7 +319,7 @@ const CelebrityTrackerDialog = () => {
               ))}
             </TabsContent>
 
-            <TabsContent value="tickers" className="flex-1 overflow-auto mt-3 grid grid-cols-2 md:grid-cols-3 gap-2 pr-1">
+            <TabsContent value="tickers" className="flex-1 overflow-auto mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 pr-1">
               {data.topTickers.map((t, i) => (
                 <Card key={i} className="p-3">
                   <div className="flex items-center justify-between mb-2">
@@ -284,15 +332,26 @@ const CelebrityTrackerDialog = () => {
                       {t.ticker}
                       <ExternalLink className="w-3 h-3" />
                     </a>
-                    <Badge variant="secondary">{t.count}</Badge>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-semibold ${t.netFlow >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                        淨 {t.netFlow >= 0 ? "+" : ""}{fmtMoney(t.netFlow)}
+                      </span>
+                      <Badge variant="secondary">{t.count}</Badge>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-emerald-500 inline-flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" /> {t.buys} 買入
-                    </span>
-                    <span className="text-rose-500 inline-flex items-center gap-1">
-                      <TrendingDown className="w-3 h-3" /> {t.sells} 賣出
-                    </span>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded bg-emerald-500/10 px-2 py-1">
+                      <div className="text-emerald-500 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" /> 買入 {t.buys}
+                      </div>
+                      <div className="text-emerald-500 font-semibold">{fmtMoney(t.buyAmount)}</div>
+                    </div>
+                    <div className="rounded bg-rose-500/10 px-2 py-1">
+                      <div className="text-rose-500 flex items-center gap-1">
+                        <TrendingDown className="w-3 h-3" /> 賣出 {t.sells}
+                      </div>
+                      <div className="text-rose-500 font-semibold">{fmtMoney(t.sellAmount)}</div>
+                    </div>
                   </div>
                 </Card>
               ))}
