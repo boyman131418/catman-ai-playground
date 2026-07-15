@@ -18,6 +18,7 @@ import MembershipManagement from "./MembershipManagement";
 import AnnouncementBoard from "./AnnouncementBoard";
 import RandomCats from "./RandomCats";
 import WeatherWidget from "./WeatherWidget";
+import News24Dialog from "./News24Dialog";
 
 interface Category {
   id: string;
@@ -302,6 +303,7 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
           </div>
           <div className="flex items-center space-x-4">
             <WeatherWidget />
+            <News24Dialog />
             <Button
               asChild
               size="sm"

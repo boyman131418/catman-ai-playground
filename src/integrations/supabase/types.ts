@@ -210,6 +210,30 @@ export type Database = {
         }
         Relationships: []
       }
+      news_cache: {
+        Row: {
+          articles: Json
+          fetched_at: string
+          id: string
+          region: string
+          region_label: string
+        }
+        Insert: {
+          articles: Json
+          fetched_at?: string
+          id?: string
+          region: string
+          region_label: string
+        }
+        Update: {
+          articles?: Json
+          fetched_at?: string
+          id?: string
+          region?: string
+          region_label?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           applied_at: string | null
