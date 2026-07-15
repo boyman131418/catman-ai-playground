@@ -308,6 +308,15 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
                 <Sparkles className="w-4 h-4 mr-1" /> 塔羅占卜
               </Link>
             </Button>
+            <Button
+              asChild
+              size="sm"
+              className="bg-gradient-to-r from-sky-500 to-indigo-500 hover:opacity-90 text-white shadow-glow"
+            >
+              <Link to="/astro">
+                <Sparkles className="w-4 h-4 mr-1" /> 西方占星
+              </Link>
+            </Button>
             {isAdmin && (
               <>
                 <Badge variant="outline" className="bg-cat-orange/10 text-cat-orange border-cat-orange/30">
