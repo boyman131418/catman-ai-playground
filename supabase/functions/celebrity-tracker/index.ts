@@ -171,6 +171,18 @@ function strip(t: any) {
   };
 }
 
+function parseAmountRange(s: string): number {
+  // Examples: "$1,001 - $15,000", "$1,000,001 - $5,000,000", "$50,000,000 +"
+  if (!s) return 0;
+  const nums = String(s).match(/[\d,]+/g);
+  if (!nums || nums.length === 0) return 0;
+  const vals = nums.map(n => Number(n.replace(/,/g, ''))).filter(n => !isNaN(n));
+  if (vals.length === 0) return 0;
+  if (vals.length === 1) return vals[0]; // "$50,000,000 +"
+  // midpoint
+  return (vals[0] + vals[1]) / 2;
+}
+
 function filterAndMap(raw: any[], windowDays: number) {
   const out: any[] = [];
   for (const r of raw) {
@@ -187,11 +199,13 @@ function filterAndMap(raw: any[], windowDays: number) {
     if (isNaN(ms)) continue;
     const d = daysAgo(ms);
     if (d < 0 || d > windowDays) continue;
+    const amountStr = String(r.amount).trim();
     out.push({
       name,
       ticker,
       type: String(r.type).trim(),
-      amount: String(r.amount).trim(),
+      amount: amountStr,
+      amountValue: parseAmountRange(amountStr),
       transaction_date: r.transaction_date || null,
       disclosure_date: r.disclosure_date || null,
       asset_description: r.asset_description || null,
