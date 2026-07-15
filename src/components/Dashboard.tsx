@@ -19,6 +19,7 @@ import AnnouncementBoard from "./AnnouncementBoard";
 import RandomCats from "./RandomCats";
 import WeatherWidget from "./WeatherWidget";
 import News24Dialog from "./News24Dialog";
+import FinanceStrategyDialog from "./FinanceStrategyDialog";
 
 interface Category {
   id: string;
