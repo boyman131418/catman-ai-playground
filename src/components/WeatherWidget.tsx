@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, MapPin, Wind, Droplets, Gauge, Sunrise, Sunset, Thermometer } from "lucide-react";
 
-const CACHE_KEY = "weather-cache-v1";
+const CACHE_KEY = "weather-cache-v2";
 const CACHE_TTL = 15 * 60 * 1000;
 
 interface WeatherData {
@@ -78,7 +79,7 @@ const WeatherWidget = () => {
         const raw = localStorage.getItem(CACHE_KEY);
         if (raw) {
           const cached = JSON.parse(raw);
-          if (Date.now() - cached.ts < CACHE_TTL) {
+          if (Date.now() - cached.ts < CACHE_TTL && cached.data?.current?.main) {
             setData(cached.data);
             return;
           }
@@ -109,11 +110,16 @@ const WeatherWidget = () => {
           timezone: geo.timezone,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const details = error instanceof FunctionsHttpError ? await error.context.text() : error.message;
+        throw new Error(details || "天氣載入失敗");
+      }
+      if (res?.error || !res?.current?.main) throw new Error(res?.error || "天氣資料不完整");
       setData(res);
       localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: res }));
     } catch (e) {
       console.error("weather load failed", e);
+      setData(null);
     } finally {
       setLoading(false);
     }
