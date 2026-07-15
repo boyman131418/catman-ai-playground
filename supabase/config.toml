@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.news-24]
 verify_jwt = false
+
+[functions.finance-strategy]
+verify_jwt = false
