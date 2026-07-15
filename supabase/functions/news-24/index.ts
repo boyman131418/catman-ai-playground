@@ -6,14 +6,14 @@ const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// region code -> label in Chinese
-const REGIONS: { code: string; label: string }[] = [
-  { code: 'hk', label: '香港' },
-  { code: 'tw', label: '台灣' },
-  { code: 'cn', label: '中國大陸' },
-  { code: 'us', label: '美國' },
-  { code: 'gb', label: '英國' },
-  { code: 'jp', label: '日本' },
+// query per region using /v2/everything (top-headlines?country= is empty on free tier)
+const REGIONS: { code: string; label: string; query: string; language: string }[] = [
+  { code: 'hk', label: '香港', query: '"Hong Kong"', language: 'en' },
+  { code: 'tw', label: '台灣', query: 'Taiwan', language: 'en' },
+  { code: 'cn', label: '中國大陸', query: 'China', language: 'en' },
+  { code: 'us', label: '美國', query: '"United States" OR USA', language: 'en' },
+  { code: 'gb', label: '英國', query: '"United Kingdom" OR Britain', language: 'en' },
+  { code: 'jp', label: '日本', query: 'Japan', language: 'en' },
 ];
 
 async function translateToChinese(texts: string[]): Promise<string[]> {
@@ -43,9 +43,9 @@ async function translateToChinese(texts: string[]): Promise<string[]> {
   }
 }
 
-async function fetchRegion(region: { code: string; label: string }) {
+async function fetchRegion(region: { code: string; label: string; query: string; language: string }) {
   const from = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const url = `https://newsapi.org/v2/top-headlines?country=${region.code}&pageSize=10&apiKey=${NEWSAPI_KEY}`;
+  const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(region.query)}&language=${region.language}&from=${from}&sortBy=popularity&pageSize=10&apiKey=${NEWSAPI_KEY}`;
   const resp = await fetch(url);
   if (!resp.ok) {
     const body = await resp.text();
