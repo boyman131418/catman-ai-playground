@@ -13,6 +13,7 @@ type Row = Record<string, any>;
 
 interface FinancePayload {
   updatedAt: string;
+  locked: Record<string, boolean>;
   congress: Row[];
   senator: Row[];
   house: Row[];
