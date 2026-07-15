@@ -87,7 +87,28 @@ const WeatherWidget = () => {
     }
     setLoading(true);
     try {
-      const { data: res, error } = await supabase.functions.invoke("weather");
+      // Step 1: lookup client IP + geo from browser (真實 client IP，唔會經 Supabase 機房)
+      let geo: any = {};
+      try {
+        const geoRes = await fetch("https://ipapi.co/json/");
+        if (geoRes.ok) geo = await geoRes.json();
+      } catch (e) {
+        console.warn("ipapi lookup failed, falling back to server-side", e);
+      }
+
+      // Step 2: pass coords to edge function
+      const { data: res, error } = await supabase.functions.invoke("weather", {
+        body: {
+          lat: geo.latitude,
+          lon: geo.longitude,
+          ip: geo.ip,
+          city: geo.city,
+          region: geo.region,
+          country: geo.country_name,
+          country_code: geo.country_code,
+          timezone: geo.timezone,
+        },
+      });
       if (error) throw error;
       setData(res);
       localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: res }));
