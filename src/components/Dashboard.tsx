@@ -305,6 +305,7 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
           <div className="flex items-center space-x-4">
             <WeatherWidget />
             <News24Dialog />
+            <FinanceStrategyDialog />
             <Button
               asChild
               size="sm"
