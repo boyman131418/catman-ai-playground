@@ -163,9 +163,9 @@ const FinanceStrategyDialog = () => {
 
   const wsbCols = [
     { key: "Ticker", label: "股票", render: TickerCell },
-    { key: "Mentions", label: "提及次數" },
+    { key: "Count", label: "提及次數", render: (v: any, r: Row) => v ?? r.Mentions ?? "-" },
+    { key: "Sentiment", label: "情緒", render: (v: any) => v != null ? Number(v).toFixed(3) : "-" },
     { key: "Rank", label: "排名" },
-    { key: "Sentiment", label: "情緒", render: (v: any) => v != null ? Number(v).toFixed(2) : "-" },
     { key: "Date", label: "日期", render: fmtDate },
   ];
 
@@ -245,14 +245,14 @@ const FinanceStrategyDialog = () => {
                 <TabsTrigger value="offexchange" className="text-xs">暗盤</TabsTrigger>
               </TabsList>
               <Card className="mt-4 p-3">
-                <TabsContent value="congress"><DataTable rows={data.congress} cols={congressCols} /></TabsContent>
-                <TabsContent value="senator"><DataTable rows={data.senator} cols={senatorCols} /></TabsContent>
-                <TabsContent value="house"><DataTable rows={data.house} cols={houseCols} /></TabsContent>
-                <TabsContent value="insiders"><DataTable rows={data.insiders} cols={insidersCols} /></TabsContent>
-                <TabsContent value="wsb"><DataTable rows={data.wsb} cols={wsbCols} /></TabsContent>
-                <TabsContent value="contracts"><DataTable rows={data.contracts} cols={contractsCols} /></TabsContent>
-                <TabsContent value="lobbying"><DataTable rows={data.lobbying} cols={lobbyingCols} /></TabsContent>
-                <TabsContent value="offexchange"><DataTable rows={data.offexchange} cols={offexchangeCols} /></TabsContent>
+                <TabsContent value="congress"><DataTable rows={data.congress} cols={congressCols} locked={data.locked?.congress} /></TabsContent>
+                <TabsContent value="senator"><DataTable rows={data.senator} cols={senatorCols} locked={data.locked?.senator} /></TabsContent>
+                <TabsContent value="house"><DataTable rows={data.house} cols={houseCols} locked={data.locked?.house} /></TabsContent>
+                <TabsContent value="insiders"><DataTable rows={data.insiders} cols={insidersCols} locked={data.locked?.insiders} /></TabsContent>
+                <TabsContent value="wsb"><DataTable rows={data.wsb} cols={wsbCols} locked={data.locked?.wsb} /></TabsContent>
+                <TabsContent value="contracts"><DataTable rows={data.contracts} cols={contractsCols} locked={data.locked?.contracts} /></TabsContent>
+                <TabsContent value="lobbying"><DataTable rows={data.lobbying} cols={lobbyingCols} locked={data.locked?.lobbying} /></TabsContent>
+                <TabsContent value="offexchange"><DataTable rows={data.offexchange} cols={offexchangeCols} locked={data.locked?.offexchange} /></TabsContent>
               </Card>
             </Tabs>
           )}
