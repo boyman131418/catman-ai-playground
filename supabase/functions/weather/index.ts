@@ -8,18 +8,18 @@ function getClientIp(req: Request): string | null {
   return req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip')
 }
 
+function toNumber(value: unknown): number | undefined {
+  if (value === null || value === undefined || value === '') return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
 async function safeJson(res: Response) {
   try {
     return await res.json()
   } catch {
     return null
   }
-}
-
-function getClientIp(req: Request): string | null {
-  const xff = req.headers.get('x-forwarded-for')
-  if (xff) return xff.split(',')[0].trim()
-  return req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip')
 }
 
 Deno.serve(async (req) => {
@@ -33,8 +33,8 @@ Deno.serve(async (req) => {
       try { body = await req.json() } catch {}
     }
 
-    let lat: number | undefined = Number(body.lat ?? url.searchParams.get('lat')) || undefined
-    let lon: number | undefined = Number(body.lon ?? url.searchParams.get('lon')) || undefined
+    let lat = toNumber(body.lat ?? url.searchParams.get('lat'))
+    let lon = toNumber(body.lon ?? url.searchParams.get('lon'))
     let ip: string = body.ip || url.searchParams.get('ip') || getClientIp(req) || ''
     let city: string = body.city || ''
     let country: string = body.country || ''
@@ -57,11 +57,13 @@ Deno.serve(async (req) => {
       timezone = timezone || ipData.timezone || ''
     }
 
-    if (typeof lat !== 'number' || typeof lon !== 'number' || Number.isNaN(lat) || Number.isNaN(lon)) {
-      return new Response(JSON.stringify({ error: '無法偵測位置', ip }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    if (lat === undefined || lon === undefined) {
+      lat = 22.3193
+      lon = 114.1694
+      city = city || '香港'
+      country = country || 'Hong Kong'
+      country_code = country_code || 'HK'
+      timezone = timezone || 'Asia/Hong_Kong'
     }
 
     const base = 'https://api.openweathermap.org/data/2.5'
@@ -74,6 +76,18 @@ Deno.serve(async (req) => {
     const [current, forecast, air] = await Promise.all([
       safeJson(curRes), safeJson(fcRes), safeJson(airRes),
     ])
+
+    if (!curRes.ok || !current?.main) {
+      console.error(`openweather current failed: ${curRes.status}`, current)
+      return new Response(JSON.stringify({
+        error: '天氣服務暫時未能回應',
+        ip,
+        location: { city, region, country, country_code, lat, lon, timezone },
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     // Fill city/country from OWM if still missing
     if (!city && current?.name) city = current.name

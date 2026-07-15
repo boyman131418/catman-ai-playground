@@ -81,7 +81,11 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
     const url = new URL(req.url);
-    const force = url.searchParams.get('force') === '1';
+    let body: any = {};
+    if (req.method !== 'GET') {
+      try { body = await req.json(); } catch {}
+    }
+    const force = url.searchParams.get('force') === '1' || body.force === 1 || body.force === true || body.force === '1';
 
     // Check cache freshness (skip if within 1 hour and not forced)
     if (!force) {
