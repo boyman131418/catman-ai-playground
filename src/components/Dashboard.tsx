@@ -16,6 +16,7 @@ import AdminPanel from "./AdminPanel";
 import MembershipApplication from "./MembershipApplication";
 import MembershipManagement from "./MembershipManagement";
 import AnnouncementBoard from "./AnnouncementBoard";
+import RandomCats from "./RandomCats";
 
 interface Category {
   id: string;
