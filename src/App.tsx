@@ -21,7 +21,6 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/astro" element={<Astro />} />
-            <Route path="/astro" element={<Astro />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
