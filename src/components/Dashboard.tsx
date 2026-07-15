@@ -20,6 +20,7 @@ import RandomCats from "./RandomCats";
 import WeatherWidget from "./WeatherWidget";
 import News24Dialog from "./News24Dialog";
 import FinanceStrategyDialog from "./FinanceStrategyDialog";
+import CelebrityTrackerDialog from "./CelebrityTrackerDialog";
 
 interface Category {
   id: string;
@@ -306,6 +307,7 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
             <WeatherWidget />
             <News24Dialog />
             <FinanceStrategyDialog />
+            <CelebrityTrackerDialog />
             <Button
               asChild
               size="sm"
