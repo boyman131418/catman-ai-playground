@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const WEBHOOK_URL = "https://hook.eu2.make.com/fiz07uhud87cxk4yfddca3y2fsrjsipa";
