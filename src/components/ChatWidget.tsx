@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const WEBHOOK_URL = "https://hook.eu2.make.com/fiz07uhud87cxk4yfddca3y2fsrjsipa";
@@ -81,6 +81,19 @@ const ChatWidget = () => {
     }
   };
 
+  const resetChat = () => {
+    if (!window.confirm("確定要重設對話？所有舊訊息會被清除。")) return;
+    localStorage.removeItem("chat_messages");
+    localStorage.removeItem("chat_session_id");
+    setMessages([
+      {
+        role: "bot",
+        text: "你好！我係 CatMan 客服 🐱 有咩可以幫到你？",
+        time: new Date().toISOString(),
+      },
+    ]);
+  };
+
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {open && (
@@ -96,9 +109,14 @@ const ChatWidget = () => {
                 </div>
               </div>
             </div>
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-primary-foreground hover:bg-white/20" onClick={() => setOpen(false)}>
-              <X className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-primary-foreground hover:bg-white/20" onClick={resetChat} title="重設對話">
+                <RotateCcw className="w-4 h-4" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-primary-foreground hover:bg-white/20" onClick={() => setOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2 bg-background/50">
