@@ -286,6 +286,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_category: { Args: { _category_id: string }; Returns: boolean }
       check_user_permission: {
         Args: {
           category_name: string
