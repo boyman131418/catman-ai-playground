@@ -81,6 +81,19 @@ const ChatWidget = () => {
     }
   };
 
+  const resetChat = () => {
+    if (!window.confirm("確定要重設對話？所有舊訊息會被清除。")) return;
+    localStorage.removeItem("chat_messages");
+    localStorage.removeItem("chat_session_id");
+    setMessages([
+      {
+        role: "bot",
+        text: "你好！我係 CatMan 客服 🐱 有咩可以幫到你？",
+        time: new Date().toISOString(),
+      },
+    ]);
+  };
+
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {open && (
