@@ -55,8 +55,6 @@ const MembershipApplication = ({ membershipTiers }: MembershipApplicationProps) 
     try {
       const { data, error } = await supabase.functions.invoke('apply-membership', {
         body: {
-          email: user.email,
-          displayName: user.email,
           membershipTierName: selectedTier
         }
       });

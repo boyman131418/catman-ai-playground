@@ -87,6 +87,29 @@ serve(async (req) => {
       .single()
 
     if (existingProfile) {
+      if (existingProfile.status === 'approved') {
+        const { error: relinkError } = await supabase
+          .from('profiles')
+          .update({ display_name: displayName, user_id: user.id })
+          .eq('email', email)
+
+        if (relinkError) {
+          console.error('Relink approved profile error:', relinkError)
+          return new Response(
+            JSON.stringify({ error: 'Failed to sync approved profile' }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Membership is already approved' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       // Update existing profile
       const { error: updateError } = await supabase
         .from('profiles')
