@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -91,6 +87,29 @@ serve(async (req) => {
       .single()
 
     if (existingProfile) {
+      if (existingProfile.status === 'approved') {
+        const { error: relinkError } = await supabase
+          .from('profiles')
+          .update({ display_name: displayName, user_id: user.id })
+          .eq('email', email)
+
+        if (relinkError) {
+          console.error('Relink approved profile error:', relinkError)
+          return new Response(
+            JSON.stringify({ error: 'Failed to sync approved profile' }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Membership is already approved' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       // Update existing profile
       const { error: updateError } = await supabase
         .from('profiles')
