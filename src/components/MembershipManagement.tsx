@@ -155,6 +155,31 @@ const MembershipManagement = () => {
     }
   };
 
+  const updateProfileTier = async (profileId: string, membershipTierId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ membership_tier_id: membershipTierId })
+        .eq('id', profileId);
+
+      if (error) throw error;
+
+      toast({
+        title: "等級更新成功",
+        description: "會員等級已更新",
+      });
+      
+      loadData();
+    } catch (error) {
+      console.error('Failed to update profile tier:', error);
+      toast({
+        title: "等級更新失敗",
+        description: "更新會員等級時發生錯誤",
+        variant: "destructive",
+      });
+    }
+  };
+
   const updatePermission = async (
     membershipTierId: string, 
     categoryId: string, 
@@ -546,7 +571,7 @@ const MembershipManagement = () => {
                       <div className="flex items-center gap-2">
                         <Select
                           value={profile.membership_tier_id}
-                          onValueChange={(value) => updateProfileStatus(profile.id, profile.status, value)}
+                          onValueChange={(value) => updateProfileTier(profile.id, value)}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
