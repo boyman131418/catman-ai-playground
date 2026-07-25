@@ -73,6 +73,14 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
   const loadData = async () => {
     setDataLoading(true);
     try {
+      // Ensure newly approved members are linked to their Supabase auth user before RLS-gated reads.
+      if (user?.id) {
+        const { error: linkError } = await supabase.rpc('link_current_user_profile');
+        if (linkError) {
+          console.error('Error linking current user profile:', linkError);
+        }
+      }
+
       // Load categories, items, and tiers in PARALLEL
       const [categoriesRes, itemsRes, tiersRes] = await Promise.all([
         supabase.from('categories').select('*').order('order_index'),
