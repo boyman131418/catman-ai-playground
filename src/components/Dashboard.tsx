@@ -75,7 +75,7 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
     try {
       // Ensure newly approved members are linked to their Supabase auth user before RLS-gated reads.
       if (user?.id) {
-        const { error: linkError } = await supabase.rpc('link_current_user_profile');
+        const { error: linkError } = await supabase.functions.invoke('sync-profile');
         if (linkError) {
           console.error('Error linking current user profile:', linkError);
         }
