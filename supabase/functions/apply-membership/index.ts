@@ -13,11 +13,22 @@ serve(async (req) => {
   }
 
   try {
-    const { email, displayName, membershipTierName } = await req.json()
-    
-    if (!email || !membershipTierName) {
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
-        JSON.stringify({ error: 'Email and membership tier name are required' }),
+        JSON.stringify({ error: 'Authorization header required' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    const { membershipTierName } = await req.json()
+    
+    if (!membershipTierName) {
+      return new Response(
+        JSON.stringify({ error: 'Membership tier name is required' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -27,9 +38,33 @@ serve(async (req) => {
 
     // Create Supabase client with service role key for secure access
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+
+    const { data: userData, error: userError } = await authClient.auth.getUser()
+    const user = userData?.user
+
+    if (userError || !user?.id || !user.email) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid user session' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    const email = user.email
+    const displayName = user.user_metadata?.full_name || user.user_metadata?.name || email
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
     
     // Get membership tier ID
     const { data: membershipTier, error: tierError } = await supabase
@@ -61,6 +96,7 @@ serve(async (req) => {
         .from('profiles')
         .update({
           display_name: displayName,
+          user_id: user.id,
           membership_tier_id: membershipTier.id,
           status: 'pending',
           applied_at: new Date().toISOString()
@@ -84,6 +120,7 @@ serve(async (req) => {
         .insert({
           email,
           display_name: displayName,
+          user_id: user.id,
           membership_tier_id: membershipTier.id,
           status: 'pending'
         })
