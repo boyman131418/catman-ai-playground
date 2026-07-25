@@ -295,6 +295,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      link_current_user_profile: { Args: never; Returns: string }
       link_user_profiles: { Args: never; Returns: undefined }
       verify_category_password: {
         Args: { category_name: string; password: string }
