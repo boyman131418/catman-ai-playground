@@ -27,6 +27,8 @@ jobs:
           s=s.replace('PDF/JPG 樂譜亦需要下一階段接 Optical Music Recognition。','JPG/PNG 已加入圖片琴譜 Beta；複雜雙手、多聲部、連音、裝飾音及升降記號仍會在下一階段接專用 OMR 強化。')
           if './omr.js' not in s:
               s=s.replace('</body></html>','<script src="./omr.js?v=2"></script></body></html>')
+          if './presets.js' not in s:
+              s=s.replace('</body></html>','<script src="./presets.js?v=4"></script></body></html>')
           p.write_text(s)
           PY
       - name: Commit patch
@@ -35,5 +37,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/pianoforge/index.html
-          git commit -m "Enable PianoForge image score generation"
+          git commit -m "Enable PianoForge image score generation and presets"
           git push
