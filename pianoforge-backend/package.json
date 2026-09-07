@@ -1,0 +1,6 @@
+{
+  "name": "pianoforge-ai-backend",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0"
+}
