@@ -1,6 +1,6 @@
 (()=>{
   const q=s=>document.querySelector(s);
-  const API=window.PIANOFORGE_AI_ENDPOINT||'https://pianoforge-ai-api.vercel.app/api/analyze-score';
+  const API=window.PIANOFORGE_AI_ENDPOINT||'https://pianoforge-five-level-piano.vercel.app/api/analyze-score';
   let selected=null;
 
   const css=document.createElement('style');
