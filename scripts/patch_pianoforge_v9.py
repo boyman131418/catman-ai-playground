@@ -1,0 +1,25 @@
+from pathlib import Path
+
+p = Path('public/pianoforge/pianoforge-pro.js')
+s = p.read_text()
+
+a = s.index('function imgPages(')
+b = s.index('async function aiAnalyze()', a)
+new_img = """function imgPages(f,maxW=1500){return new Promise((resolve,reject)=>{const u=URL.createObjectURL(f),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);const scale=Math.min(1,maxW/im.width),W=Math.max(600,Math.round(im.width*scale)),H=Math.max(300,Math.round(im.height*scale)),base=document.createElement('canvas');base.width=W;base.height=H;let bx=base.getContext('2d');bx.fillStyle='#fff';bx.fillRect(0,0,W,H);bx.drawImage(im,0,0,W,H);const images=[base.toDataURL('image/jpeg',.82)],bands=2,overlap=.06;for(let i=0;i<bands;i++){let y0=Math.max(0,Math.floor((i/bands-overlap)*H)),y1=Math.min(H,Math.ceil(((i+1)/bands+overlap)*H)),c=document.createElement('canvas');c.width=W;c.height=y1-y0;let ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(base,0,y0,W,y1-y0,0,0,W,y1-y0);images.push(c.toDataURL('image/jpeg',.84))}resolve(images)};im.onerror=reject;im.src=u})}
+"""
+s = s[:a] + new_img + s[b:]
+
+a = s.index('async function aiAnalyze()')
+b = s.index('async function localScan()', a)
+new_ai = """async function aiAnalyze(){const f=state.selectedFile;if(!f)return;$('#ai').disabled=true;showStatus('AI Vision 正在分析：已壓縮琴譜並送到高速視覺模型，正在核對拍號、左右手、音高、音值、和弦與小節…');const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),58000);try{const images=await imgPages(f),payload=JSON.stringify({images,filename:f.name});if(payload.length>4200000)throw Error('圖片資料仍然太大，請先裁切四周空白後再試');const resp=await fetch('https://pianoforge-five-level-piano.vercel.app/api/analyze-score',{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json'},body:payload}),data=await resp.json().catch(()=>({}));if(!resp.ok){const detail=Array.isArray(data.attempts)&&data.attempts.length?' ['+data.attempts.map(x=>x.model+': '+x.status).join(' → ')+']':'';throw Error((data.error||`AI API ${resp.status}`)+detail)}const s=data.score||{},ev=(s.notes||s.melody||[]).map((n,i)=>({midi:Number(n.midi),start:Number(n.start)||0,duration:Number(n.duration)||1,hand:n.hand==='L'?'L':'R',voice:Number(n.voice)||1,confidence:Number(n.confidence??.7),id:'ai'+i})).filter(e=>Number.isFinite(e.midi));if(!ev.length)throw Error('AI 未回傳可用音符');let time=s.time_signature||s.time||{},key=s.key||{};const sc=normalizeScore({title:s.title||f.name.replace(/\\.[^.]+$/,''),composer:s.composer||'',tempo:s.tempo||88,time:{beats:time.beats||4,beatType:time.beat_type||time.beatType||4},key:{fifths:Number.isFinite(Number(key.fifths))?Number(key.fifths):0,mode:key.mode||'major'},events:ev});state.source=sc;state.grade=8;state.band=4;await render(sc);showStatus(`AI 完成：${ev.length} 個音符 · 模型 ${data.model||'Vision'} · ${Math.round((data.elapsed_ms||0)/1000)} 秒 · 拍號 ${sc.time.beats}/${sc.time.beatType} · ${keyLabel(sc)}。${(s.warnings||[]).slice(0,2).join('；')}`,'ok')}catch(e){const msg=e?.name==='AbortError'?'AI 讀譜超時。系統已停止等待，請重試一次；如仍超時，請先裁走圖片四周空白。':e.message;showStatus('AI Vision 未完成：'+msg,'bad')}finally{clearTimeout(timer);$('#ai').disabled=false}}
+"""
+s = s[:a] + new_ai + s[b:]
+p.write_text(s)
+
+h = Path('public/pianoforge/index.html')
+x = h.read_text()
+for old in ['專業重寫版 v6','專業重寫版 v7','專業重寫版 v8']:
+    x = x.replace(old, '專業重寫版 v9')
+for old in ['pianoforge-pro.js?v=6','pianoforge-pro.js?v=7','pianoforge-pro.js?v=8']:
+    x = x.replace(old, 'pianoforge-pro.js?v=9')
+h.write_text(x)
