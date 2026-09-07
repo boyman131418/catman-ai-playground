@@ -1,0 +1,1 @@
+PianoForge Pro v7 frontend activation marker. This commit intentionally triggers GitHub Pages so the corrected AI backend endpoint is published.
