@@ -1,0 +1,1 @@
+Trigger production deployment after connecting Vercel to GitHub and setting Root Directory to pianoforge-backend.
