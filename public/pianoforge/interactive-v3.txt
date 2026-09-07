@@ -1,0 +1,1 @@
+PianoForge interactive score v3: playback cursor, note highlighting, MIDI/on-screen correctness feedback, wait-for-me practice mode.
