@@ -1,0 +1,49 @@
+name: PianoForge Pro endpoint fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pianoforge-pro-endpoint-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch PianoForge Pro endpoint and cache version
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('public/pianoforge/pianoforge-pro.js')
+          s = p.read_text()
+          old = 'https://pianoforge-ai-api.vercel.app/api/analyze-score'
+          new = 'https://pianoforge-five-level-piano.vercel.app/api/analyze-score'
+          if old in s:
+              s = s.replace(old, new)
+              p.write_text(s)
+          i = Path('public/pianoforge/index.html')
+          h = i.read_text()
+          h = h.replace('專業重寫版 v6', '專業重寫版 v7')
+          h = h.replace('pianoforge-pro.js?v=6', 'pianoforge-pro.js?v=7')
+          i.write_text(h)
+          PY
+
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/pianoforge/pianoforge-pro.js public/pianoforge/index.html
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git commit -m "Fix PianoForge Pro AI backend endpoint"
+          git push
