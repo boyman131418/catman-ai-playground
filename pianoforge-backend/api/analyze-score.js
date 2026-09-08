@@ -1,7 +1,7 @@
 const MODEL_CANDIDATES = [...new Set([
   process.env.OPENROUTER_MODEL,
-  'z-ai/glm-5.3-flash',
   'qwen/qwen3-vl-32b-instruct',
+  'z-ai/glm-5.3-flash',
   'deepseek/deepseek-v4-flash-vision-exp'
 ].filter(Boolean))];
 
@@ -27,90 +27,99 @@ function cleanJSON(text){
   return JSON.parse(s);
 }
 
-function expandCompact(raw){
-  const arr=Array.isArray(raw?.n)?raw.n:[];
-  const notes=arr.map((x,i)=>{
-    if(!Array.isArray(x)||x.length<6) return null;
-    const midi=Math.round(Number(x[0]));
-    const start=Number(x[1]);
-    const duration=Number(x[2]);
-    const hand=x[3]==='L'?'L':'R';
-    const measure=Math.max(1,Math.round(Number(x[4])||1));
-    const voice=Math.max(1,Math.min(4,Math.round(Number(x[5])||1)));
-    const confidence=Math.max(0,Math.min(1,Number(x[6]??0.75)));
-    if(!Number.isFinite(midi)||midi<21||midi>108||!Number.isFinite(start)||start<0||!Number.isFinite(duration)||duration<=0) return null;
-    return {midi,start,duration,hand,measure,voice,confidence,id:`ai${i}`};
-  }).filter(Boolean).slice(0,900).sort((a,b)=>a.start-b.start||a.hand.localeCompare(b.hand)||a.midi-b.midi);
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 
+function normalizePass(raw){
   const ts=Array.isArray(raw?.s)?raw.s:[4,4];
+  const beats=Number.isFinite(Number(ts[0]))?clamp(Math.round(Number(ts[0])),1,12):4;
+  const beatType=[1,2,4,8,16].includes(Number(ts[1]))?Number(ts[1]):4;
+  const barLen=beats*4/beatType;
   const kk=Array.isArray(raw?.k)?raw.k:['','unknown',0];
-  const groups=new Map();
-  for(const n of notes.filter(x=>x.hand==='R')){
-    const key=n.start.toFixed(5);
-    if(!groups.has(key)||groups.get(key).midi<n.midi) groups.set(key,n);
-  }
-  const melody=[...groups.values()].sort((a,b)=>a.start-b.start).map(n=>({midi:n.midi,start:n.start,duration:n.duration,measure:n.measure,confidence:n.confidence})).slice(0,320);
-
+  const notes=(Array.isArray(raw?.n)?raw.n:[]).map((x,i)=>{
+    if(!Array.isArray(x)||x.length<7) return null;
+    const midi=Math.round(Number(x[0]));
+    const measure=Math.max(1,Math.round(Number(x[1])||1));
+    const beat=Math.max(0,Number(x[2])||0);
+    const duration=Number(x[3]);
+    const hand=x[4]==='L'?'L':'R';
+    const voice=clamp(Math.round(Number(x[5])||1),1,4);
+    const confidence=clamp(Number(x[6]??0.75),0,1);
+    if(!Number.isFinite(midi)||midi<21||midi>108||!Number.isFinite(duration)||duration<=0) return null;
+    return {midi,measure,beat,duration,hand,voice,confidence,id:`p${i}`};
+  }).filter(Boolean);
   return {
-    title:String(raw?.t||''),
-    composer:String(raw?.a||''),
-    key:{
-      tonic:String(kk[0]||''),
-      mode:['major','minor','unknown'].includes(kk[1])?kk[1]:'unknown',
-      fifths:Number.isFinite(Number(kk[2]))?Math.max(-7,Math.min(7,Math.round(Number(kk[2])))):null
-    },
-    time_signature:{
-      beats:Number.isFinite(Number(ts[0]))?Math.max(1,Math.min(12,Math.round(Number(ts[0])))):4,
-      beat_type:[1,2,4,8,16].includes(Number(ts[1]))?Number(ts[1]):4
-    },
-    tempo:Number.isFinite(Number(raw?.b))?Math.max(20,Math.min(300,Number(raw.b))):88,
-    overall_confidence:Math.max(0,Math.min(1,Number(raw?.q??0.7))),
-    notes,
-    melody,
-    warnings:Array.isArray(raw?.w)?raw.w.map(String).slice(0,12):[]
+    title:String(raw?.t||''), composer:String(raw?.a||''),
+    key:{tonic:String(kk[0]||''),mode:['major','minor','unknown'].includes(kk[1])?kk[1]:'unknown',fifths:Number.isFinite(Number(kk[2]))?clamp(Math.round(Number(kk[2])),-7,7):null},
+    time_signature:{beats,beat_type:beatType}, tempo:Number.isFinite(Number(raw?.b))?clamp(Number(raw.b),20,300):88,
+    overall_confidence:clamp(Number(raw?.q??0.7),0,1), notes, warnings:Array.isArray(raw?.w)?raw.w.map(String).slice(0,8):[], barLen
   };
 }
 
-async function callOpenRouter({model,content,system,timeoutMs}){
+function mergePasses(passes){
+  const usable=passes.filter(p=>p&&p.notes?.length);
+  if(!usable.length) return null;
+  const meta=usable.reduce((a,b)=>b.notes.length>a.notes.length?b:a,usable[0]);
+  const barLen=meta.barLen||4;
+  const map=new Map();
+  for(const p of usable){
+    for(const n of p.notes){
+      const k=[n.measure,n.beat.toFixed(3),n.midi,n.hand,n.voice].join('|');
+      const old=map.get(k);
+      if(!old||n.confidence>old.confidence) map.set(k,n);
+    }
+  }
+  const notes=[...map.values()].map((n,i)=>({
+    midi:n.midi,
+    start:(n.measure-1)*barLen+n.beat,
+    duration:n.duration,
+    hand:n.hand,
+    measure:n.measure,
+    voice:n.voice,
+    confidence:n.confidence,
+    id:`ai${i}`
+  })).sort((a,b)=>a.start-b.start||a.hand.localeCompare(b.hand)||a.midi-b.midi).slice(0,900);
+  const groups=new Map();
+  for(const n of notes.filter(x=>x.hand==='R')){
+    const k=n.start.toFixed(4);
+    if(!groups.has(k)||groups.get(k).midi<n.midi) groups.set(k,n);
+  }
+  const melody=[...groups.values()].sort((a,b)=>a.start-b.start).slice(0,320).map(n=>({midi:n.midi,start:n.start,duration:n.duration,measure:n.measure,confidence:n.confidence}));
+  return {
+    title:meta.title, composer:meta.composer, key:meta.key, time_signature:meta.time_signature, tempo:meta.tempo,
+    overall_confidence:usable.reduce((a,p)=>a+p.overall_confidence,0)/usable.length,
+    notes, melody, warnings:[...new Set(usable.flatMap(p=>p.warnings||[]))].slice(0,12)
+  };
+}
+
+async function callOpenRouter({model,image,filename,passLabel,timeoutMs}){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),Math.max(3000,timeoutMs));
+  const system=`You are a professional optical music recognition specialist and conservatory-level piano engraver. Read ONLY the supplied piano score image. Extract notation, do not creatively complete music from memory. Preserve both hands, all chord tones, independent voices, accidentals, ledger-line notes and printed rhythm values. Quarter-note units: quarter=1, eighth=.5, sixteenth=.25, dotted quarter=1.5, half=2, whole=4. For each note return printed measure number and beat offset WITHIN that measure, where the first beat is 0. Chord tones share the same measure and beat. Never default all notes to quarter notes.`;
+  const prompt=`OMR pass ${passLabel} for ${filename}. Return ONLY compact JSON: {"t":"title","a":"composer","k":["tonic","major|minor|unknown",fifths],"s":[beats,beatType],"b":tempo,"q":confidence,"n":[[midi,measure,beatWithinMeasure,duration,"R|L",voice,confidence],...],"w":[]}. IMPORTANT: transcribe EVERY clearly visible note in this crop. A normal piano system usually has dozens of noteheads; returning only a handful is an incomplete result. No prose, no markdown.`;
   try{
     const r=await fetch('https://openrouter.ai/api/v1/chat/completions',{
-      method:'POST',
-      signal:controller.signal,
-      headers:{
-        Authorization:`Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type':'application/json',
-        'HTTP-Referer':'https://boyman131418.github.io/catman-ai-playground/pianoforge/',
-        'X-OpenRouter-Title':'PianoForge Pro'
-      },
-      body:JSON.stringify({
-        model,
-        temperature:0,
-        max_tokens:12000,
-        response_format:{type:'json_object'},
-        provider:{allow_fallbacks:true},
-        messages:[{role:'system',content:system},{role:'user',content}]
-      })
+      method:'POST', signal:controller.signal,
+      headers:{Authorization:`Bearer ${process.env.OPENROUTER_API_KEY}`,'Content-Type':'application/json','HTTP-Referer':'https://boyman131418.github.io/catman-ai-playground/pianoforge/','X-OpenRouter-Title':'PianoForge Pro'},
+      body:JSON.stringify({model,temperature:0,max_tokens:9000,response_format:{type:'json_object'},provider:{allow_fallbacks:true},messages:[{role:'system',content:system},{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:image}}]}]})
     });
     const raw=await r.json().catch(()=>({}));
-    return {r,raw};
-  } finally {
-    clearTimeout(timer);
-  }
+    if(!r.ok) return {ok:false,status:r.status,error:raw?.error?.message||`OpenRouter request failed (${r.status})`};
+    let out=raw?.choices?.[0]?.message?.content;
+    if(Array.isArray(out)) out=out.map(x=>x?.text||'').join('');
+    const pass=normalizePass(cleanJSON(out));
+    if(pass.notes.length<8) return {ok:false,status:422,error:`Incomplete OMR: only ${pass.notes.length} usable notes`,pass};
+    return {ok:true,pass};
+  } catch(e){
+    if(e?.name==='AbortError') return {ok:false,status:504,error:`Model timed out after ${Math.round(timeoutMs/1000)}s`};
+    return {ok:false,status:502,error:e?.message||'Provider connection failed'};
+  } finally { clearTimeout(timer); }
 }
 
 export default async function handler(req,res){
   const started=Date.now();
   cors(req,res);
   if(req.method==='OPTIONS') return res.status(204).end();
-  if(req.method==='GET') return res.status(200).json({
-    ok:true,
-    service:'PianoForge AI OMR',
-    configured:Boolean(process.env.OPENROUTER_API_KEY),
-    models:MODEL_CANDIDATES,
-    version:'v9-compact-timeout-safe'
-  });
+  if(req.method==='GET') return res.status(200).json({ok:true,service:'PianoForge AI OMR',configured:Boolean(process.env.OPENROUTER_API_KEY),models:MODEL_CANDIDATES,version:'v10-parallel-crop-omr'});
   if(req.method!=='POST') return res.status(405).json({error:'Method not allowed'});
   if(!process.env.OPENROUTER_API_KEY) return res.status(503).json({error:'AI backend is not configured'});
 
@@ -119,67 +128,30 @@ export default async function handler(req,res){
     let imgs=Array.isArray(images)?images.filter(x=>typeof x==='string'&&/^data:image\//.test(x)):(/^data:image\//.test(imageDataUrl||'')?[imageDataUrl]:[]);
     if(!imgs.length) return res.status(400).json({error:'score image is required'});
     if(imgs.length>3) imgs=imgs.slice(0,3);
-    const payloadChars=imgs.reduce((a,s)=>a+s.length,0);
-    if(payloadChars>4_000_000) return res.status(413).json({error:'琴譜圖片資料太大，請重新選擇圖片；新版前端會自動壓縮後再送出。'});
-
-    const system=`You are a professional optical music recognition specialist and conservatory-level piano engraver. Extract only notation visibly supported by the supplied score images. The first image is the full page; later images are overlapping crops of the same page. Reconcile crops and NEVER duplicate notes. Use quarter-note units for absolute time from the beginning: quarter=1, eighth=.5, sixteenth=.25, dotted quarter=1.5, half=2, whole=4. Preserve chords at identical start times, both hands, independent voices, accidentals, ties that extend duration, pickup measures, time signature and key signature. Never default all rhythms to quarter notes. Do not invent missing notes from familiarity with the composition.`;
-
-    const prompt=`Analyze ${filename}. Return ONLY one compact JSON object with exactly these keys:\n`+
-      `{"t":"title","a":"composer","k":["tonic","major|minor|unknown",fifths],"s":[beats,beatType],"b":tempoBPM,"q":overallConfidence,"n":[[midi,start,duration,"R|L",measure,voice,confidence],...],"w":["warning",...]}\n`+
-      `Rules: n must contain ALL clearly visible piano notes from both staves, including chord tones and ledger-line notes. start is absolute quarter-note time from the beginning. duration must match printed rhythm. Use voice 1-4 to distinguish independent voices where visible. Keep confidence 0..1. No prose and no markdown.`;
-    const content=[{type:'text',text:prompt},...imgs.map(url=>({type:'image_url',image_url:{url}}))];
+    if(imgs.reduce((a,s)=>a+s.length,0)>4_000_000) return res.status(413).json({error:'琴譜圖片資料太大，請重新選擇圖片；前端會自動壓縮。'});
 
     const attempts=[];
     for(const model of MODEL_CANDIDATES){
-      const elapsed=Date.now()-started;
-      const remaining=HARD_DEADLINE_MS-elapsed;
-      if(remaining<6500) break;
-      const timeoutMs=Math.min(48000,remaining-2500);
-      let result;
-      try{
-        result=await callOpenRouter({model,content,system,timeoutMs});
-      }catch(e){
-        if(e?.name==='AbortError'){
-          attempts.push({model,status:504,error:`Model timed out after ${Math.round(timeoutMs/1000)}s`});
-          break;
-        }
-        attempts.push({model,status:502,error:e?.message||'Provider connection failed'});
-        continue;
+      const remaining=HARD_DEADLINE_MS-(Date.now()-started);
+      if(remaining<9000) break;
+      const timeoutMs=Math.min(43000,remaining-3000);
+      // Prefer the two high-resolution crop images. Use the full-page image as a third pass only when no crops exist.
+      const passImages=imgs.length>=3?imgs.slice(1,3):imgs;
+      const results=await Promise.all(passImages.map((img,i)=>callOpenRouter({model,image:img,filename,passLabel:`${i+1}/${passImages.length}`,timeoutMs})));
+      const good=results.filter(x=>x.ok).map(x=>x.pass);
+      const bad=results.filter(x=>!x.ok);
+      attempts.push({model,status:good.length?206:(bad[0]?.status||422),error:good.length?`${good.length}/${results.length} crop passes succeeded`:bad.map(x=>x.error).join('; '),passes:results.map(x=>({ok:x.ok,status:x.status||200,notes:x.pass?.notes?.length||0,error:x.error||''}))});
+      const score=mergePasses(good);
+      if(score&&score.notes.length>=20){
+        if(good.length<results.length) score.warnings.unshift('部分分段辨識未成功；目前結果來自成功辨識的分段。');
+        return res.status(200).json({ok:true,model,score,fallbacks:attempts,elapsed_ms:Date.now()-started,pass_count:good.length});
       }
-      const {r,raw}=result;
-      if(!r.ok){
-        const message=raw?.error?.message||`OpenRouter request failed (${r.status})`;
-        attempts.push({model,status:r.status,error:message});
-        if(r.status===401||r.status===402) break;
-        continue;
-      }
-      try{
-        let out=raw?.choices?.[0]?.message?.content;
-        if(Array.isArray(out)) out=out.map(x=>x?.text||'').join('');
-        const compact=cleanJSON(out);
-        const score=expandCompact(compact);
-        if(score.notes.length<3){
-          attempts.push({model,status:422,error:'Model returned too few usable notes'});
-          continue;
-        }
-        return res.status(200).json({ok:true,model,score,fallbacks:attempts,elapsed_ms:Date.now()-started});
-      }catch(e){
-        attempts.push({model,status:422,error:e?.message||'Invalid JSON output'});
-      }
+      // If this model produced partial data, try the next model only if time remains.
     }
 
-    const timed=attempts.some(a=>a.status===504);
-    const tos=attempts.some(a=>a.status===403&&/terms of service|prohibited/i.test(a.error||''));
-    return res.status(timed?504:502).json({
-      error:timed
-        ? 'AI 讀譜超過伺服器可等待時間。新版已停止無限等待；請再試一次，或先裁切成較少系統的琴譜圖片。'
-        : tos
-          ? '部分 AI provider 因帳戶/供應商條款限制拒絕請求，系統已嘗試其他視覺模型但未成功。'
-          : (attempts[0]?.error||'All AI vision providers failed'),
-      attempts,
-      elapsed_ms:Date.now()-started
-    });
-  }catch(e){
+    const timed=attempts.some(a=>a.passes?.some(p=>p.status===504));
+    return res.status(timed?504:422).json({error:timed?'AI 讀譜超時；分段模型未能在時限內完成。':'AI 已連接，但本次分段辨識仍未取得足夠完整的音符資料。',attempts,elapsed_ms:Date.now()-started});
+  } catch(e){
     return res.status(500).json({error:e?.message||'AI score analysis failed'});
   }
 }
