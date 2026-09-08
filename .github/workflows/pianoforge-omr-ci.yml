@@ -1,0 +1,38 @@
+name: PianoForge OMR staging CI
+
+on:
+  push:
+    branches:
+      - pianoforge-omr-rebuild
+    paths:
+      - 'pianoforge-backend/**'
+      - 'public/pianoforge/**'
+      - 'scripts/patch_pianoforge_omr_v11.py'
+      - '.github/workflows/pianoforge-omr-ci.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: |
+          node --check public/pianoforge/pianoforge-pro.js
+          node --check pianoforge-backend/api/omr.js
+      - name: Architecture assertions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          js=Path('public/pianoforge/pianoforge-pro.js').read_text()
+          html=Path('public/pianoforge/index.html').read_text()
+          api=Path('pianoforge-backend/api/omr.js').read_text()
+          assert '/api/omr?action=start' in js
+          assert '/api/analyze-score' not in js, 'generic Vision transcription still referenced'
+          assert 'sourceXML' in js
+          assert '專業 OMR 讀譜' in html
+          assert 'pianoforge-pro.js?v=11' in html
+          assert 'FLAT_API_TOKEN' in api
+          assert "output:'musicxml'" in api
+          assert '/exports/musicxml' in api
+          print('PianoForge OMR staging architecture checks passed')
+          PY
