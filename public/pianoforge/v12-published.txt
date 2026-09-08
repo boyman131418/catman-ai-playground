@@ -1,0 +1,1 @@
+PianoForge v12 — upload / AI score reading removed; interactive presets and grading retained.
