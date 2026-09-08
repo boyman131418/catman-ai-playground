@@ -1,0 +1,46 @@
+name: PianoForge remove upload and AI reading
+
+on:
+  push:
+    paths:
+      - '.github/workflows/pianoforge-remove-upload.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove upload / AI score reading UI
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('public/pianoforge/index.html')
+          s=p.read_text()
+          s=s.replace('<title>PianoForge Pro｜AI 五階互動琴譜</title>','<title>PianoForge Pro｜五階互動琴譜</title>')
+          s=re.sub(r'<section class="hero">.*?</section>', '''<section class="hero"><div class="badge">互動練習版 v12</div><h1>由簡單開始，<br><span>一路練到原曲。</span></h1><p>以 10 首內置曲目作練習核心，同一份結構化琴譜同時驅動五線譜、聲音、播放游標、MIDI 練習與難度改編。你可以由 Initial / Grade 1 開始，逐步提升至 Grade 8 / 原曲，按自己程度練習。</p></section>''',s,count=1,flags=re.S)
+          # Completely remove the visible upload / AI reading panel, but retain hidden compatibility nodes so the existing JS cannot break.
+          replacement='''<div hidden aria-hidden="true"><span id="fname"></span><button id="pick"></button><input id="file" type="file"><button id="ai"></button><button id="local"></button><img id="preview" alt=""><div id="status"></div></div>'''
+          s=re.sub(r'<section class="panel upload">.*?</section>',replacement,s,count=1,flags=re.S)
+          s=s.replace('<b>🎼 10 首預設曲目</b>','<b>01 · 🎼 選擇練習曲目</b>')
+          s=s.replace('<h3>02 · 五階版本</h3>','<h3>02 · 選擇程度</h3>')
+          s=s.replace('直接測試不同節奏、調性與 ABRSM 目標難度。','先選一首曲目，再按自己程度切換五階版本、精確 ABRSM 目標級別與伴奏風格。')
+          s=s.replace('pianoforge-pro.js?v=9','pianoforge-pro.js?v=12')
+          p.write_text(s)
+          PY
+      - name: Verify upload section is gone
+        run: |
+          ! grep -q '01 · 上傳 / AI 讀譜' public/pianoforge/index.html
+          ! grep -q 'AI Vision 全譜辨識' public/pianoforge/index.html
+          grep -q '01 · 🎼 選擇練習曲目' public/pianoforge/index.html
+          grep -q '互動練習版 v12' public/pianoforge/index.html
+      - name: Commit published version
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/pianoforge/index.html
+          git commit -m 'PianoForge v12 remove upload and AI reading' || exit 0
+          git push
