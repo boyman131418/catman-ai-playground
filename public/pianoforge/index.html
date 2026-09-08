@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>PianoForge Pro｜AI 五階互動琴譜</title>
+<title>PianoForge Pro｜五階互動琴譜</title>
 <script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@2.1.2/build/opensheetmusicdisplay.min.js"></script>
 <style>
 :root{--bg:#09080d;--panel:#17131f;--panel2:#110e16;--line:#332d3d;--gold:#e5b84e;--gold2:#f3cf78;--text:#f6f0e5;--muted:#aaa1ae;--ok:#35b36b;--bad:#e45c63;--blue:#5fa8ff}
@@ -13,20 +13,12 @@
 <body>
 <div class="nav"><div class="wrap navin"><div class="brand">♪ <b>PianoForge Pro</b> · 五階互動琴譜</div><div class="badge">樂理驅動 · ABRSM-aligned</div></div></div>
 <div class="wrap">
-<section class="hero"><div class="badge">專業重寫版 v9</div><h1>琴譜唔再係圖片，<br><span>每粒音都係資料。</span></h1><p>同一份結構化琴譜同時驅動五線譜、聲音、播放游標、MIDI 練習與難度改編，確保「畫面寫咩，播放就係咩」。上傳圖片時優先使用 AI Vision 全譜辨識；MusicXML 則可直接保留拍號、音值、左右手與樂譜結構。</p></section>
-<section class="panel upload">
-  <b>01 · 上傳 / AI 讀譜</b>
-  <div class="drop">
-    <div><strong id="fname">選擇 MusicXML 或清晰琴譜圖片</strong><div class="muted">圖片：建議 AI Vision 全譜辨識；MusicXML：直接匯入。舊版「對焦失敗」本機像素掃描只保留作備援，不再作主要方案。</div><div class="pills"><span class="pill">Time Signature</span><span class="pill">真實音值</span><span class="pill">雙手 / Voice</span><span class="pill">Ledger Lines</span><span class="pill">Score = Audio</span><span class="pill">Web MIDI</span></div></div>
-    <div class="actions"><button class="btn dark" id="pick">選擇檔案</button><input id="file" hidden type="file" accept=".xml,.musicxml,image/*"><button class="btn ai" id="ai" disabled>✨ AI Vision 全譜辨識</button><button class="btn gold" id="local" disabled>快速本機掃描</button></div>
-  </div>
-  <img id="preview" class="preview" alt="琴譜預覽">
-  <div id="status" class="status"></div>
-</section>
-<section class="panel presets"><div style="display:flex;justify-content:space-between;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:10px"><div><b>🎼 10 首預設曲目</b><div class="muted">直接測試不同節奏、調性與 ABRSM 目標難度。</div></div><div class="muted">公版 / 傳統 / PianoForge 練習</div></div><div id="presetGrid" class="presetGrid"></div></section>
+<section class="hero"><div class="badge">互動練習版 v12</div><h1>由簡單開始，<br><span>一路練到原曲。</span></h1><p>以 10 首內置曲目作練習核心，同一份結構化琴譜同時驅動五線譜、聲音、播放游標、MIDI 練習與難度改編。你可以由 Initial / Grade 1 開始，逐步提升至 Grade 8 / 原曲，按自己程度練習。</p></section>
+<div hidden aria-hidden="true"><span id="fname"></span><button id="pick"></button><input id="file" type="file"><button id="ai"></button><button id="local"></button><img id="preview" alt=""><div id="status"></div></div>
+<section class="panel presets"><div style="display:flex;justify-content:space-between;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:10px"><div><b>01 · 🎼 選擇練習曲目</b><div class="muted">先選一首曲目，再按自己程度切換五階版本、精確 ABRSM 目標級別與伴奏風格。</div></div><div class="muted">公版 / 傳統 / PianoForge 練習</div></div><div id="presetGrid" class="presetGrid"></div></section>
 <div class="grid">
 <aside class="panel side">
-  <h3>02 · 五階版本</h3>
+  <h3>02 · 選擇程度</h3>
   <div id="bands" class="levelBand"></div>
   <label class="smallLabel">精確 ABRSM 目標級別</label>
   <div id="grades" class="quick"></div>
@@ -45,5 +37,5 @@
 </div>
 <section class="theory"><div class="wrap"><h2>教材知識 → 實際編配規則</h2><div class="theoryGrid"><div class="theoryCard"><h3>Scales / Chords / Arpeggios / Cadences</h3><p>每級限制調性、手位、和弦密度與琶音複雜度；低級先以主三和弦與基本終止建立穩定骨架。</p></div><div class="theoryCard"><h3>Chord Progressions</h3><p>低級可將 6th、maj7、6/9、9th 等還原為基本三和弦；高級逐步加入延伸和弦、passing / neighbour 色彩。</p></div><div class="theoryCard"><h3>Harmony / Voice-leading</h3><p>共同音盡量保留；其餘聲部走最近位置；多聲部 stem 依 voice 分向，避免只畫「一堆黑點」。</p></div><div class="theoryCard"><h3>100 Left Hand Patterns</h3><p>伴奏由 basic → broken chord → waltz / pop → blues / boogie / new-age，按技術目標逐級增加。</p></div></div></div></section>
 <div id="modal" class="modal"><div class="modalBox"><button id="close" class="chip" style="float:right">關閉</button><h2 id="mh">編配分析</h2><div id="mb"></div></div></div>
-<script src="./pianoforge-pro.js?v=9"></script>
+<script src="./pianoforge-pro.js?v=12"></script>
 </body></html>
