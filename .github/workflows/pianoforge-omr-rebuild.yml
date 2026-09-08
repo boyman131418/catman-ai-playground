@@ -1,0 +1,35 @@
+name: PianoForge professional OMR rebuild
+
+on:
+  push:
+    branches:
+      - pianoforge-omr-rebuild
+    paths:
+      - '.github/workflows/pianoforge-omr-rebuild.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: pianoforge-omr-rebuild
+          fetch-depth: 0
+      - name: Apply professional OMR frontend patch
+        run: python scripts/patch_pianoforge_omr_v11.py
+      - name: Syntax check frontend
+        run: node --check public/pianoforge/pianoforge-pro.js
+      - name: Commit staging rebuild
+        run: |
+          git config user.name "boyman131418"
+          git config user.email "boyman131418@gmail.com"
+          git add public/pianoforge/pianoforge-pro.js public/pianoforge/index.html
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "PianoForge v11 professional OMR frontend"
+            git push origin HEAD:pianoforge-omr-rebuild
+          fi
