@@ -13,12 +13,12 @@
 <body>
 <div class="nav"><div class="wrap navin"><div class="brand">♪ <b>PianoForge Pro</b> · 五階互動琴譜</div><div class="badge">樂理驅動 · ABRSM-aligned</div></div></div>
 <div class="wrap">
-<section class="hero"><div class="badge">專業重寫版 v9</div><h1>琴譜唔再係圖片，<br><span>每粒音都係資料。</span></h1><p>同一份結構化琴譜同時驅動五線譜、聲音、播放游標、MIDI 練習與難度改編，確保「畫面寫咩，播放就係咩」。上傳圖片時優先使用 AI Vision 全譜辨識；MusicXML 則可直接保留拍號、音值、左右手與樂譜結構。</p></section>
+<section class="hero"><div class="badge">專業 OMR 重寫版 v11</div><h1>琴譜唔再係圖片，<br><span>每粒音都係資料。</span></h1><p>同一份結構化琴譜同時驅動五線譜、聲音、播放游標、MIDI 練習與難度改編，確保「畫面寫咩，播放就係咩」。上傳圖片 / PDF 時先由專業 OMR 轉為 MusicXML；原譜顯示直接使用 OMR MusicXML，拍號、音值、左右手、voice、beam、stem 與附加線不再由一般 Vision 模型猜測。</p></section>
 <section class="panel upload">
-  <b>01 · 上傳 / AI 讀譜</b>
+  <b>01 · 上傳 / 專業 OMR 讀譜</b>
   <div class="drop">
-    <div><strong id="fname">選擇 MusicXML 或清晰琴譜圖片</strong><div class="muted">圖片：建議 AI Vision 全譜辨識；MusicXML：直接匯入。舊版「對焦失敗」本機像素掃描只保留作備援，不再作主要方案。</div><div class="pills"><span class="pill">Time Signature</span><span class="pill">真實音值</span><span class="pill">雙手 / Voice</span><span class="pill">Ledger Lines</span><span class="pill">Score = Audio</span><span class="pill">Web MIDI</span></div></div>
-    <div class="actions"><button class="btn dark" id="pick">選擇檔案</button><input id="file" hidden type="file" accept=".xml,.musicxml,image/*"><button class="btn ai" id="ai" disabled>✨ AI Vision 全譜辨識</button><button class="btn gold" id="local" disabled>快速本機掃描</button></div>
+    <div><strong id="fname">選擇 MusicXML 或清晰琴譜圖片</strong><div class="muted">圖片 / PDF：使用專業 Optical Music Recognition 轉成 MusicXML；MusicXML：直接匯入。一般聊天 AI 不再負責猜音符。</div><div class="pills"><span class="pill">Time Signature</span><span class="pill">真實音值</span><span class="pill">雙手 / Voice</span><span class="pill">Ledger Lines</span><span class="pill">Score = Audio</span><span class="pill">Web MIDI</span></div></div>
+    <div class="actions"><button class="btn dark" id="pick">選擇檔案</button><input id="file" hidden type="file" accept=".xml,.musicxml,.pdf,image/*"><button class="btn ai" id="ai" disabled>🎼 專業 OMR 讀譜</button><button class="btn gold" id="local" disabled>檔案品質檢查</button></div>
   </div>
   <img id="preview" class="preview" alt="琴譜預覽">
   <div id="status" class="status"></div>
@@ -45,5 +45,5 @@
 </div>
 <section class="theory"><div class="wrap"><h2>教材知識 → 實際編配規則</h2><div class="theoryGrid"><div class="theoryCard"><h3>Scales / Chords / Arpeggios / Cadences</h3><p>每級限制調性、手位、和弦密度與琶音複雜度；低級先以主三和弦與基本終止建立穩定骨架。</p></div><div class="theoryCard"><h3>Chord Progressions</h3><p>低級可將 6th、maj7、6/9、9th 等還原為基本三和弦；高級逐步加入延伸和弦、passing / neighbour 色彩。</p></div><div class="theoryCard"><h3>Harmony / Voice-leading</h3><p>共同音盡量保留；其餘聲部走最近位置；多聲部 stem 依 voice 分向，避免只畫「一堆黑點」。</p></div><div class="theoryCard"><h3>100 Left Hand Patterns</h3><p>伴奏由 basic → broken chord → waltz / pop → blues / boogie / new-age，按技術目標逐級增加。</p></div></div></div></section>
 <div id="modal" class="modal"><div class="modalBox"><button id="close" class="chip" style="float:right">關閉</button><h2 id="mh">編配分析</h2><div id="mb"></div></div></div>
-<script src="./pianoforge-pro.js?v=9"></script>
+<script src="./pianoforge-pro.js?v=11"></script>
 </body></html>
