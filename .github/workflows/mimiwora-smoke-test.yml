@@ -39,34 +39,52 @@ jobs:
             await page.waitForSelector('#guestBtn',{state:'visible'});
             const title=await page.title();
             if(!title.includes('MIMIWORA')) throw new Error('Wrong title: '+title);
+            await page.waitForFunction(()=>window.MIMIWORA_ROSTER&&window.MIMIWORA_ROSTER.all.length===7,{timeout:30000});
             const boot=await page.evaluate(()=>({
               sprites:Object.keys(window.MIMIWORA_SPRITES||{}).length,
+              roster:window.MIMIWORA_ROSTER?.all?.slice()||[],
               canvas:[document.getElementById('c').width,document.getElementById('c').height],
-              err:getComputedStyle(document.getElementById('err')).display
+              err:getComputedStyle(document.getElementById('err')).display,
+              trio:['chiikawa','hachiware','usagi'].map(k=>({k,name:HERO_BASE[k]?.name,weapons:WEAPONS[k]?.length||0}))
             }));
-            if(boot.sprites!==4) throw new Error('Expected 4 sprite packs, got '+boot.sprites);
+            if(boot.sprites<7) throw new Error('Expected at least 7 sprite packs, got '+boot.sprites);
+            if(boot.roster.length!==7) throw new Error('Expected 7 roster entries, got '+boot.roster.length);
             if(boot.canvas[0]!==540 || boot.canvas[1]!==960) throw new Error('Canvas is not 9:16: '+boot.canvas);
             if(boot.err!=='none') throw new Error('Error overlay visible before start');
+            if(boot.trio.some(x=>x.weapons!==4||!x.name)) throw new Error('Chiikawa trio definitions incomplete: '+JSON.stringify(boot.trio));
+
             await page.click('#guestBtn');
-            await page.waitForTimeout(900);
+            await page.waitForTimeout(700);
             const afterGuest=await page.evaluate(()=>{
               const c=document.getElementById('c'),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
               let nonBlack=0;
               for(let i=0;i<d.length;i+=4096){if(d[i]+d[i+1]+d[i+2]>18 && d[i+3]>0) nonBlack++;}
-              let mode=null; try{ mode=game.mode }catch(e){}
-              return {nonBlack,mode,gate:getComputedStyle(document.getElementById('authGate')).display,err:getComputedStyle(document.getElementById('err')).display};
+              return {nonBlack,mode:game.mode,gate:getComputedStyle(document.getElementById('authGate')).display,err:getComputedStyle(document.getElementById('err')).display};
             });
             if(afterGuest.gate!=='none') throw new Error('Guest gate did not close');
             if(afterGuest.nonBlack<8) throw new Error('Canvas appears blank: '+afterGuest.nonBlack);
             if(afterGuest.err!=='none') throw new Error('Error overlay visible after guest start');
-            if(afterGuest.mode && afterGuest.mode!=='title') throw new Error('Unexpected boot mode '+afterGuest.mode);
+
+            await page.evaluate(()=>{save.seen=true;game.mode='map';});
             const box=await page.locator('#c').boundingBox();
-            await page.mouse.click(box.x+box.width/2,box.y+box.height*.83);
-            await page.waitForTimeout(500);
-            const modeAfter=await page.evaluate(()=>{try{return game.mode}catch(e){return null}});
-            if(modeAfter && !['story','map'].includes(modeAfter)) throw new Error('Title interaction failed, mode='+modeAfter);
+            await page.mouse.click(box.x+box.width*.5,box.y+box.height*.18);
+            await page.waitForTimeout(350);
+            const partyMode=await page.evaluate(()=>game.mode);
+            if(partyMode!=='party') throw new Error('Stage click did not open party select, mode='+partyMode);
+
+            const partyCheck=await page.evaluate(()=>{
+              const picked=window.__MIMIWORA_TEST__.party(['chiikawa','hachiware','usagi','mimi']);
+              game.stageId=1;game.mode='loadout';
+              return {picked,saveParty:save.party.slice(),selected:game.selectedHero};
+            });
+            if(JSON.stringify(partyCheck.picked)!==JSON.stringify(['chiikawa','hachiware','usagi','mimi'])) throw new Error('Party API failed '+JSON.stringify(partyCheck));
+            await page.evaluate(()=>{window.__MIMIWORA_TEST__.start(1);window.__MIMIWORA_TEST__.skipStory();});
+            await page.waitForTimeout(800);
+            const battle=await page.evaluate(()=>({mode:game.mode,heroes:Object.keys(game.heroes),types:TYPES.slice(),hp:game.gateHP}));
+            if(battle.mode!=='battle') throw new Error('Could not enter battle: '+JSON.stringify(battle));
+            if(battle.heroes.length!==4 || !battle.heroes.includes('chiikawa') || !battle.heroes.includes('hachiware') || !battle.heroes.includes('usagi')) throw new Error('New party missing in battle: '+JSON.stringify(battle));
             if(fatal.length) throw new Error('Browser errors: '+fatal.join(' | '));
-            console.log('GUEST_SMOKE_OK',JSON.stringify({title,boot,afterGuest,modeAfter}));
+            console.log('ROSTER_SMOKE_OK',JSON.stringify({title,boot,afterGuest,partyCheck,battle}));
 
             // Verify Google OAuth can at least start. We do not submit credentials.
             const p2=await browser.newPage({viewport:{width:390,height:844}});
