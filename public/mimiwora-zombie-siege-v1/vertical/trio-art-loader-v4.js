@@ -1,10 +1,10 @@
-/* MIMIWORA trio character-sheet art loader v4 HQ */
+/* MIMIWORA trio character-sheet art loader v4.1 HQ */
 (function(){
   const TRIO=new Set(['chiikawa','hachiware','usagi']);
   const BASE='/catman-ai-playground/mimiwora-zombie-siege-v1/vertical/art/';
   const files={
     chiikawa:'chiikawa-v4.png',
-    hachiware:'hachiware-v4.png',
+    hachiware:'hachiware-v5.svg',
     usagi:'usagi-v4.png'
   };
   window.MIMIWORA_SPRITES=window.MIMIWORA_SPRITES||{};
@@ -12,7 +12,15 @@
     const im=new Image();
     im.decoding='async';
     im.onload=()=>{ IMG[k]=im; window.MIMIWORA_SPRITES[k]=im.src; };
-    im.src=BASE+file+'?v=20260914d';
+    im.onerror=()=>{
+      console.warn('MIMIWORA trio art failed:',k,file);
+      if(k==='hachiware'){
+        const retry=new Image();
+        retry.onload=()=>{IMG[k]=retry;window.MIMIWORA_SPRITES[k]=retry.src};
+        retry.src=BASE+'hachiware-v5.svg?v=20260914f2';
+      }
+    };
+    im.src=BASE+file+'?v=20260914f2';
   }
 
   const oldDrawSprite=window.drawSprite;
@@ -28,10 +36,10 @@
     ctx.save();
     ctx.globalAlpha=alpha;
     const prev=ctx.imageSmoothingEnabled;
-    ctx.imageSmoothingEnabled=false;
+    ctx.imageSmoothingEnabled=true;
     ctx.drawImage(im,f*sw,t*sh,sw,sh,x-size/2,base-size,size,size);
     ctx.imageSmoothingEnabled=prev;
     ctx.restore();
   };
-  window.MIMIWORA_TRIO_ART_VERSION='character-sheet-v4-hq';
+  window.MIMIWORA_TRIO_ART_VERSION='character-sheet-v4.1-hq-hachiware-fix';
 })();
