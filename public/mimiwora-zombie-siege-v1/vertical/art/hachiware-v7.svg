@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="384" viewBox="0 0 1024 384">
+<defs>
+ <filter id="sh" x="-35%" y="-35%" width="170%" height="180%"><feDropShadow dx="0" dy="3" stdDeviation="2.2" flood-color="#071827" flood-opacity=".32"/></filter>
+ <style>.o{stroke:#172331;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.w{fill:#fffdf8}.b{fill:#59a7e8}.eye{fill:#172331}.pink{fill:#ff9cab}</style>
+ <g id="front">
+  <ellipse class="w o" cx="0" cy="78" rx="26" ry="25"/>
+  <ellipse class="w o" cx="-25" cy="75" rx="8" ry="13"/><ellipse class="w o" cx="25" cy="75" rx="8" ry="13"/>
+  <ellipse class="w o" cx="-13" cy="101" rx="10" ry="6"/><ellipse class="w o" cx="13" cy="101" rx="10" ry="6"/>
+  <path class="b o" d="M23 79 C40 75 44 87 37 94 C31 100 24 97 22 92 C29 94 34 90 33 86 C32 82 28 82 23 84Z"/>
+  <ellipse class="w o" cx="0" cy="35" rx="37" ry="34"/>
+  <path class="b o" d="M-33 27 C-34 13-28 1-19-9 L-8 0 Q0 8 8 0 L19-9 C28 1 34 13 33 27 C20 22 11 18 0 18 C-11 18-20 22-33 27Z"/>
+  <path class="b o" d="M-25 1 L-20-13 L-9 0 M25 1 L20-13 L9 0"/>
+  <ellipse class="pink" cx="-24" cy="50" rx="7.5" ry="4.7"/><ellipse class="pink" cx="24" cy="50" rx="7.5" ry="4.7"/>
+ </g>
+ <g id="side">
+  <ellipse class="w o" cx="-2" cy="79" rx="25" ry="24"/>
+  <ellipse class="w o" cx="-24" cy="75" rx="8" ry="13"/><ellipse class="w o" cx="22" cy="75" rx="8" ry="13"/>
+  <ellipse class="w o" cx="-12" cy="101" rx="10" ry="6"/><ellipse class="w o" cx="14" cy="100" rx="10" ry="6"/>
+  <path class="b o" d="M-21 81 C-38 77-42 89-35 96 C-29 102-22 99-20 94 C-27 96-32 92-31 88 C-30 84-26 84-21 86Z"/>
+  <ellipse class="w o" cx="2" cy="35" rx="36" ry="34"/>
+  <path class="b o" d="M-31 28 C-31 12-25 0-16-9 L-4 1 C9-2 22 2 31 16 C21 14 13 16 5 20 C-6 24-17 27-31 28Z"/>
+  <path class="b o" d="M-22 0 L-17-14 L-6 0 M22 2 L21-11 L31 3"/>
+  <ellipse class="pink" cx="25" cy="50" rx="7" ry="4.5"/>
+ </g>
+ <g id="face"><ellipse class="eye" cx="-13" cy="40" rx="4.3" ry="5.8"/><ellipse class="eye" cx="13" cy="40" rx="4.3" ry="5.8"/><circle fill="#fff" cx="-11.5" cy="38" r="1.2"/><circle fill="#fff" cx="14.5" cy="38" r="1.2"/><path class="o" fill="none" d="M-5 53 Q0 59 5 53 M0 53 V49"/></g>
+ <g id="happy"><path class="o" fill="none" d="M-18 41 Q-13 35-8 41 M8 41 Q13 35 18 41"/><path class="o" fill="#ff8095" d="M-7 52 Q0 64 7 52 Q0 59-7 52Z"/></g>
+ <g id="cry"><ellipse class="eye" cx="-13" cy="40" rx="4.5" ry="6"/><ellipse class="eye" cx="13" cy="40" rx="4.5" ry="6"/><path fill="#64c9ff" d="M-18 47 C-20 57-17 65-13 65 C-9 65-7 56-9 47Z M9 47 C7 57 9 65 13 65 C17 65 20 57 18 47Z"/><path class="o" fill="none" d="M-6 59 Q0 54 6 59"/></g>
+ <g id="sideface"><ellipse class="eye" cx="18" cy="40" rx="4.3" ry="5.8"/><circle fill="#fff" cx="19.4" cy="38" r="1.2"/><path class="o" fill="none" d="M24 52 Q28 55 31 51"/></g>
+ <g id="bag"><path fill="none" stroke="#f18da6" stroke-width="4" d="M-27 42 Q3 55 24 85"/><circle class="o" fill="#f6a8ba" cx="22" cy="86" r="9.5"/><circle fill="#fff" cx="19" cy="83" r="1.6"/><circle fill="#fff" cx="25" cy="83" r="1.6"/><path stroke="#7d4a58" stroke-width="1.5" fill="none" d="M20 88 Q22 90 24 88"/></g>
+ <g id="royal"><path class="o" fill="#2d67b5" d="M-27 70 Q0 82 27 70 L34 102 Q0 115-34 102Z"/><path class="o" fill="#fff" d="M-28 71 Q0 82 28 71 L25 80 Q0 89-25 80Z"/><path class="o" fill="#ffd653" d="M-15 2 L-10-11 L0-4 L9-13 L15 2Z"/><circle class="o" fill="#ffd653" cx="0" cy="76" r="4.7"/></g>
+ <g id="fork"><path class="o" fill="#e7f7ff" d="M-12 82 L46 31 L51 37 L-7 88Z"/><path class="o b" d="M43 31 C51 20 60 18 63 23 C58 25 55 28 55 33 C62 29 67 31 67 36 C59 42 51 43 46 38Z"/></g>
+ <g id="swing"><path fill="none" stroke="#4fc8ff" stroke-width="6.5" stroke-linecap="round" opacity=".75" d="M-42 87 Q15 7 68 38"/><path fill="#b8efff" d="M55 14 L59 22 L67 26 L59 30 L55 38 L51 30 L43 26 L51 22Z"/></g>
+ <g id="hearts"><path fill="#ff6f9e" d="M-48 27 C-57 17-68 30-48 44 C-28 30-39 17-48 27Z M49 29 C40 19 29 32 49 47 C69 32 58 19 49 29Z"/><path fill="#ffd74f" d="M-36 6 L-33 13 L-26 16 L-33 19 L-36 26 L-39 19 L-46 16 L-39 13Z M42 6 L45 13 L52 16 L45 19 L42 26 L39 19 L32 16 L39 13Z"/></g>
+</defs>
+<rect width="1024" height="384" fill="none"/>
+<g filter="url(#sh)">
+<g transform="translate(64,18)"><use href="#front"/><use href="#face"/></g>
+<g transform="translate(192,18)"><use href="#front"/><use href="#happy"/></g>
+<g transform="translate(320,18)"><use href="#side"/><use href="#sideface"/></g>
+<g transform="translate(448,14) rotate(-3)"><use href="#side"/><use href="#sideface"/><circle fill="#d8f1ff" cx="-42" cy="91" r="5"/><circle fill="#d8f1ff" cx="-50" cy="83" r="3"/></g>
+<g transform="translate(576,18)"><use href="#front"/><use href="#face"/><use href="#fork"/></g>
+<g transform="translate(704,18)"><use href="#front"/><use href="#happy"/><use href="#fork"/><use href="#swing"/></g>
+<g transform="translate(832,18)"><use href="#front"/><use href="#cry"/></g>
+<g transform="translate(960,18)"><use href="#front"/><use href="#happy"/><use href="#hearts"/></g>
+<g transform="translate(64,146)"><use href="#front"/><use href="#face"/><use href="#bag"/></g>
+<g transform="translate(192,146)"><use href="#front"/><use href="#happy"/><use href="#bag"/></g>
+<g transform="translate(320,146)"><use href="#side"/><use href="#sideface"/><use href="#bag"/></g>
+<g transform="translate(448,142) rotate(-3)"><use href="#side"/><use href="#sideface"/><use href="#bag"/><circle fill="#d8f1ff" cx="-42" cy="91" r="5"/></g>
+<g transform="translate(576,146)"><use href="#front"/><use href="#face"/><use href="#bag"/><use href="#fork"/></g>
+<g transform="translate(704,146)"><use href="#front"/><use href="#happy"/><use href="#bag"/><use href="#fork"/><use href="#swing"/></g>
+<g transform="translate(832,146)"><use href="#front"/><use href="#cry"/><use href="#bag"/></g>
+<g transform="translate(960,146)"><use href="#front"/><use href="#happy"/><use href="#bag"/><use href="#hearts"/></g>
+<g transform="translate(64,274)"><use href="#royal"/><use href="#front"/><use href="#face"/></g>
+<g transform="translate(192,274)"><use href="#royal"/><use href="#front"/><use href="#happy"/></g>
+<g transform="translate(320,274)"><use href="#royal"/><use href="#side"/><use href="#sideface"/></g>
+<g transform="translate(448,270) rotate(-3)"><use href="#royal"/><use href="#side"/><use href="#sideface"/></g>
+<g transform="translate(576,274)"><use href="#royal"/><use href="#front"/><use href="#face"/><use href="#fork"/></g>
+<g transform="translate(704,274)"><use href="#royal"/><use href="#front"/><use href="#happy"/><use href="#fork"/><use href="#swing"/></g>
+<g transform="translate(832,274)"><use href="#royal"/><use href="#front"/><use href="#cry"/></g>
+<g transform="translate(960,274)"><use href="#royal"/><use href="#front"/><use href="#happy"/><use href="#hearts"/></g>
+</g></svg>
