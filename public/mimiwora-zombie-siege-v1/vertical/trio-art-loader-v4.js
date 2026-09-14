@@ -1,35 +1,34 @@
-/* MIMIWORA trio character-sheet art loader v4.1 HQ */
+/* MIMIWORA trio character-sheet art loader v5 HQ */
 (function(){
   const TRIO=new Set(['chiikawa','hachiware','usagi']);
   const BASE='/catman-ai-playground/mimiwora-zombie-siege-v1/vertical/art/';
-  const files={
-    chiikawa:'chiikawa-v4.png',
-    hachiware:'hachiware-v5.svg',
-    usagi:'usagi-v4.png'
-  };
+  const files={chiikawa:'chiikawa-v4.png',usagi:'usagi-v4.png'};
   window.MIMIWORA_SPRITES=window.MIMIWORA_SPRITES||{};
-  for(const [k,file] of Object.entries(files)){
+
+  function install(k,src){
     const im=new Image();
     im.decoding='async';
-    im.onload=()=>{ IMG[k]=im; window.MIMIWORA_SPRITES[k]=im.src; };
-    im.onerror=()=>{
-      console.warn('MIMIWORA trio art failed:',k,file);
-      if(k==='hachiware'){
-        const retry=new Image();
-        retry.onload=()=>{IMG[k]=retry;window.MIMIWORA_SPRITES[k]=retry.src};
-        retry.src=BASE+'hachiware-v5.svg?v=20260914f2';
-      }
-    };
-    im.src=BASE+file+'?v=20260914f2';
+    im.onload=()=>{ IMG[k]=im; window.MIMIWORA_SPRITES[k]=src; };
+    im.onerror=()=>console.warn('MIMIWORA trio art failed:',k);
+    im.src=src;
+  }
+
+  install('chiikawa',BASE+files.chiikawa+'?v=20260914h');
+  install('usagi',BASE+files.usagi+'?v=20260914h');
+  if(window.__HACHIWARE_V5_B64){
+    install('hachiware','data:image/webp;base64,'+window.__HACHIWARE_V5_B64);
+  }else{
+    console.warn('Hachiware v5 inline art missing; using fallback');
+    install('hachiware',BASE+'hachiware-v5.svg?v=20260914h');
   }
 
   const oldDrawSprite=window.drawSprite;
   window.drawSprite=function(k,tier,frame,x,base,scale=2.01,alpha=1){
     const im=IMG[k];
-    if(!TRIO.has(k) || !im || !im.complete || !im.naturalWidth){
+    if(!TRIO.has(k)||!im||!im.complete||!im.naturalWidth){
       return oldDrawSprite(k,tier,frame,x,base,scale,alpha);
     }
-    const sw=im.naturalWidth/8, sh=im.naturalHeight/3;
+    const sw=im.naturalWidth/8,sh=im.naturalHeight/3;
     const f=Math.max(0,Math.min(7,frame|0));
     const t=Math.max(0,Math.min(2,tier|0));
     const size=80*scale;
@@ -41,5 +40,5 @@
     ctx.imageSmoothingEnabled=prev;
     ctx.restore();
   };
-  window.MIMIWORA_TRIO_ART_VERSION='character-sheet-v4.1-hq-hachiware-fix';
+  window.MIMIWORA_TRIO_ART_VERSION='character-sheet-v5-hachiware-cartoon';
 })();
